@@ -112,6 +112,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base class to inherit from, provides testing functionality for {@link Application}.
@@ -454,6 +455,17 @@ public class TestBase {
                                                                 String datasetInstanceName) throws Exception {
     return addDatasetInstance(Constants.DEFAULT_NAMESPACE_ID, datasetTypeName, datasetInstanceName,
                               DatasetProperties.EMPTY);
+  }
+  /**
+   * Gets Dataset manager of Dataset instance of type <T>
+   *
+   * @param datasetInstanceName - instance name of dataset
+   * @return Dataset Manager of Dataset instance of type <T>
+   * @throws Exception
+   */
+  protected final <T> DataSetManager<T> getDataset(String datasetInstanceName,
+                                                   Map<String, String> arguments) throws Exception {
+    return getTestManager().getDataset(Constants.DEFAULT_NAMESPACE_ID, datasetInstanceName, arguments);
   }
 
   /**

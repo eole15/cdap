@@ -18,6 +18,7 @@ package co.cask.cdap.test.internal;
 
 import co.cask.cdap.api.metrics.RuntimeMetrics;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
+import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.lang.ProgramClassLoader;
 import co.cask.cdap.common.lang.jar.BundleJarUtil;
 import co.cask.cdap.data.dataset.DatasetInstantiator;
@@ -74,6 +75,7 @@ public class DefaultApplicationManager implements ApplicationManager {
   private final ProcedureClientFactory procedureClientFactory;
   private final AppFabricClient appFabricClient;
   private final DiscoveryServiceClient discoveryServiceClient;
+  private final Store store;
 
   @Inject
   public DefaultApplicationManager(DatasetFramework datasetFramework,
@@ -84,13 +86,17 @@ public class DefaultApplicationManager implements ApplicationManager {
                                    TemporaryFolder tempFolder,
                                    AppFabricClient appFabricClient,
                                    @Assisted("applicationId") Id.Application applicationId,
-                                   @Assisted Location deployedJar) {
+                                   @Assisted Location deployedJar, Store store) {
     this.applicationId = applicationId;
     this.streamWriterFactory = streamWriterFactory;
     this.procedureClientFactory = procedureClientFactory;
     this.discoveryServiceClient = discoveryServiceClient;
     this.txSystemClient = txSystemClient;
     this.appFabricClient = appFabricClient;
+    this.store = store;
+
+
+
 
     try {
       File tempDir = tempFolder.newFolder();
@@ -400,6 +406,12 @@ public class DefaultApplicationManager implements ApplicationManager {
       }
     } catch (Exception e) {
       throw Throwables.propagate(e);
+    }
+  }
+
+  void foo() {
+    store.getRuns() {
+
     }
   }
 
