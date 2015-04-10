@@ -26,7 +26,7 @@ import co.cask.cdap.templates.etl.api.batch.BatchSource;
 import co.cask.cdap.templates.etl.batch.sinks.FileSetSink;
 import co.cask.cdap.templates.etl.batch.sinks.KVTableSink;
 import co.cask.cdap.templates.etl.batch.sinks.TimePartitionedFileSetDatasetAvroSink;
-import co.cask.cdap.templates.etl.batch.sources.FileSetSource;
+import co.cask.cdap.templates.etl.batch.sources.PartitionedFileSetSource;
 import co.cask.cdap.templates.etl.batch.sources.KVTableSource;
 import co.cask.cdap.templates.etl.batch.sources.StreamBatchSource;
 import co.cask.cdap.templates.etl.common.Constants;
@@ -64,7 +64,7 @@ public class ETLBatchTemplate extends ApplicationTemplate<ETLBatchConfig> {
                                         StreamBatchSource.class, StreamToStructuredRecordTransform.class,
                                         StructuredRecordToGenericRecordTransform.class,
                                         GenericTypeToAvroKeyTransform.class,
-                                        TimePartitionedFileSetDatasetAvroSink.class, FileSetSource.class,
+                                        TimePartitionedFileSetDatasetAvroSink.class, PartitionedFileSetSource.class,
                                         FileSetSink.class));
   }
 

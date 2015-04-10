@@ -16,8 +16,11 @@
 
 package co.cask.cdap.templates.etl.batch.sources;
 
-import co.cask.cdap.api.dataset.lib.FileSet;
 import co.cask.cdap.api.dataset.lib.FileSetArguments;
+import co.cask.cdap.api.dataset.lib.PartitionKey;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSet;
+import co.cask.cdap.api.dataset.lib.PartitionedFileSetArguments;
+import co.cask.cdap.api.dataset.lib.Partitioning;
 import co.cask.cdap.templates.etl.api.Property;
 import co.cask.cdap.templates.etl.api.StageConfigurer;
 import co.cask.cdap.templates.etl.api.batch.BatchSource;
@@ -29,12 +32,13 @@ import java.util.Map;
 /**
  * CDAP Table Dataset Batch Source.
  */
-public class FileSetSource extends BatchSource<byte[], byte[]> {
+public class PartitionedFileSetSource extends BatchSource<byte[], byte[]> {
   private static final String TABLE_NAME = "name";
   private static final String INPUT_PATH = "inputPath";
+  private static final String PARTITION_KEY_SCHEMA = "partitionKeySchema";
   @Override
   public void configure(StageConfigurer configurer) {
-    configurer.setName(FileSetSource.class.getSimpleName());
+    configurer.setName(PartitionedFileSetSource.class.getSimpleName());
     configurer.setDescription("CDAP FileSet Dataset Batch Source");
     configurer.addProperty(new Property(TABLE_NAME, "Fileset Name", true));
     configurer.addProperty(new Property(INPUT_PATH, "Output path to write to", true));
@@ -44,7 +48,17 @@ public class FileSetSource extends BatchSource<byte[], byte[]> {
   public void prepareJob(BatchSourceContext context) {
     Map<String, String> inputArgs = Maps.newHashMap();
     FileSetArguments.setInputPath(inputArgs, context.getRuntimeArguments().get(INPUT_PATH));
-    FileSet input = context.getDataset(context.getRuntimeArguments().get(TABLE_NAME), inputArgs);
+
+    String partitionKeyString = context.getRuntimeArguments().get(PARTITION_KEY_SCHEMA);
+    String[] partitionKey = partitionKeyString == null ? new String[0] : partitionKeyString.split(",");
+    PartitionKey.Builder builder = PartitionKey.builder();
+    for(int i = 0; i < partitionKey.length; i += 2) {
+      builder.addField(partitionKey[i], partitionKey[i + 1]);
+    }
+    PartitionKey key = builder.build();
+    PartitionedFileSetArguments.setOutputPartitionKey(inputArgs, key);
+
+    PartitionedFileSet input = context.getDataset(context.getRuntimeArguments().get(TABLE_NAME), inputArgs);
     context.setInput(context.getRuntimeArguments().get(TABLE_NAME), input);
   }
 }

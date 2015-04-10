@@ -21,7 +21,7 @@ import co.cask.cdap.api.dataset.lib.FileSetArguments;
 import co.cask.cdap.api.dataset.lib.FileSetProperties;
 import co.cask.cdap.api.templates.ApplicationTemplate;
 import co.cask.cdap.templates.etl.batch.sinks.FileSetSink;
-import co.cask.cdap.templates.etl.batch.sources.FileSetSource;
+import co.cask.cdap.templates.etl.batch.sources.PartitionedFileSetSource;
 import co.cask.cdap.templates.etl.common.config.ETLStage;
 import co.cask.cdap.test.ApplicationManager;
 import co.cask.cdap.test.DataSetManager;
@@ -32,13 +32,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-import org.apache.twill.filesystem.Location;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +104,7 @@ public class FileSetSourceSinkTest extends TestBase {
 
 
   private ETLBatchConfig constructETLBatchConfig() {
-    ETLStage source = new ETLStage(FileSetSource.class.getSimpleName(), ImmutableMap.of("name", sourceFileset,
+    ETLStage source = new ETLStage(PartitionedFileSetSource.class.getSimpleName(), ImmutableMap.of("name", sourceFileset,
                                                                                         "inputPath", "file1"));
     ETLStage sink = new ETLStage(FileSetSink.class.getSimpleName(), ImmutableMap.of("name", sinkFileset,
                                                                                     "outputPath", "abc"));
