@@ -14,37 +14,81 @@ angular.module(PKG.name+'.feature.dashboard')
       this.dataSrc = null;
       this.isLive = false;
     }
-    Widget.prototype.fetchData = function(scope) {
-      if (!this.dataSrc) {
-        this.dataSrc = new MyDataSource(scope);
-      }
-      this.dataSrc.request({
-        _cdapPath: '/metrics/query' +
-          '?context=' + encodeURIComponent(this.metric.context) +
-          '&metric=' + encodeURIComponent(this.metric.name) +
-          '&start=now-60s&end=now',
 
-        method: 'POST'
-      })
-        .then(this.processData.bind(this))
-    }
-    Widget.prototype.startPolling = function (scope) {
-      if (!this.dataSrc) {
-        this.dataSrc = new MyDataSource(scope);
+    // 'ns.default.app.foo' -> {'ns': 'default', 'app': 'foo'}
+    function contextToTags(context) {
+      parts = context.split('.')
+      if (parts.length % 2 != 0) {
+        throw "Metrics context has uneven number of parts: " + this.metric.context
       }
-      if(!this.metric) {
+      tags = {}
+      for (var i = 0; i < parts.length; i+=2) {
+        tags[parts[i]] = parts[i + 1]
+      }
+      return tags
+    }
+
+    function constructQuery(queryId, tags, metrics) {
+      timeRange = {'start': 'now-60s', 'end': 'now'}
+      queryObj = {tags: tags, metrics: metrics, groupBy: [], timeRange: timeRange}
+      retObj = {}
+      retObj[queryId] = queryObj
+      return retObj
+    }
+
+    Widget.prototype.fetchData = function (scope) {
+      var dataSrc = new MyDataSource(scope);
+      if (!this.metric) {
         return;
       }
-      return this.dataSrc.poll(
+      queryId = "qid"
+      tags = contextToTags(this.metric.context)
+      if (this.metric.name === 'latency.histo') {
+        metrics = [
+        "user.lat.0-10ms",
+        "user.lat.11-100ms",
+        "user.lat.101-500ms",
+        "user.lat.501-1000ms",
+        "user.lat.1001-2000ms",
+        "user.lat.2001-3000ms",
+        "user.lat.3001-4000ms",
+        "user.lat.4001-5000ms",
+        "user.lat.5001-10000ms",
+        "user.lat.>10000ms" ];
+      } else {
+        metrics = [this.metric.name];
+      }
+      dataSrc.poll(
         {
-          _cdapPath: '/metrics/query' +
-            '?context=' + encodeURIComponent(this.metric.context) +
-            '&metric=' + encodeURIComponent(this.metric.name) +
-            '&start=now-60s&end=now',
-
-          method: 'POST'
+          _cdapPath: '/metrics/query',
+          method: 'POST',
+          body: constructQuery(queryId, tags, metrics),
         },
-        this.processData.bind(this)
+        (function (result) {
+          var data, tempMap = {};
+          result = result[queryId]
+          for (var i = 0; i < metrics.length; i++) {
+            var metric = metrics[i];
+            tempMap[metric] = {};
+            // interpolating the data since backend returns only metrics at specific time periods instead of
+            // for the whole range. We have to interpolate the rest with 0s to draw the graph.
+            for (var j = result.startTime; j < result.endTime; j++) {
+              tempMap[metric][j] = 0;
+            }
+          }
+          for (var i = 0; i < result.series.length; i++) {
+            data = result.series[i].data;
+            metric = result.series[i].metricName
+            for (var k = 0 ; k < data.length; k++) {
+              tempMap[metric][data[k].time] = data[k].value;
+            }
+          }
+          tmpdata = [];
+          for (var i = 0; i < metrics.length; i++) {
+            tmpdata.push(tempMap[metrics[i]]);
+          }
+          this.data = tmpdata;
+        }).bind(this)
       );
     };
 
@@ -107,25 +151,32 @@ angular.module(PKG.name+'.feature.dashboard')
     $scope.chartHistory = null;
     $scope.stream = null;
     $scope.$watch('wdgt.data', function (newVal) {
-      var v;
       if(angular.isObject(newVal)) {
-        v = Object.keys(newVal).map(function(key) {
-          return {
-            time: key,
-            y: newVal[key]
-          };
-        });
-
-        if ($scope.chartHistory) {
-          $scope.stream = v.slice(-1);
+        var vs = [];
+        for (var i = 0; i < newVal.length; i++) {
+          vs.push(Object.keys(newVal[i]).map(function(key) {
+            return {
+              time: key,
+              y: newVal[i][key]
+            };
+          }));
         }
 
-        $scope.chartHistory = [
-          {
-            label: $scope.wdgt.metric.name,
-            values: v
+        if ($scope.chartHistory) {
+          arr = [];
+          for (var i = 0; i < vs.length; i++) {
+            var el = vs[i];
+            var lastIndex = el.length-1;
+            arr.push(el[lastIndex])
           }
-        ];
+          $scope.stream = [arr]
+        }
+
+        hist = [];
+        for (var i = 0; i < vs.length; i++) {
+          hist.push({label: $scope.wdgt.metric.name, values: vs[i]});
+        }
+        $scope.chartHistory = hist;
 
       }
     });

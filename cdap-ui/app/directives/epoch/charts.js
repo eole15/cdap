@@ -72,7 +72,7 @@ ngEpoch.controller('epochController', function ($scope, $compile, caskWindowMana
         }
         else if (newVal && newVal.length) {
           for (var i = 0; i < newVal.length; i++) {
-            $scope.me.push([newVal[i]]);
+            $scope.me.push(newVal[i]);
           }
 
         }
@@ -85,6 +85,7 @@ ngEpoch.controller('epochController', function ($scope, $compile, caskWindowMana
         el = angular.element(o.el).empty();
     console.log('[epoch]', $scope.type, o);
     $scope.me = new Epoch._typeMap[$scope.type](o);
+    alianwar = $scope.me
     $scope.me.draw();
     $compile(el)($scope);
   }
