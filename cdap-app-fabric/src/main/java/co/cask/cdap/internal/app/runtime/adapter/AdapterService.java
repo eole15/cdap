@@ -531,7 +531,7 @@ public class AdapterService extends AbstractIdleService {
     return new ApplicationTemplateInfo(jarFile, spec.getName(), spec.getDescription(), programType, fileHash);
   }
 
-  protected void upgrade() {
+  public void upgrade() {
     List<NamespaceMeta> namespaceMetas = namespaceAdmin.listNamespaces();
     Collection<AdapterSpecification> allAdapters = Lists.newArrayList();
     for (NamespaceMeta namespaceMeta : namespaceMetas) {

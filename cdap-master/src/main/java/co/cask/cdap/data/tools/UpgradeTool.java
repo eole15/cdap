@@ -49,6 +49,7 @@ import co.cask.cdap.data2.dataset2.InMemoryDatasetFramework;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.internal.app.namespace.DefaultNamespaceAdmin;
 import co.cask.cdap.internal.app.namespace.NamespaceAdmin;
+import co.cask.cdap.internal.app.runtime.adapter.AdapterService;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
 import co.cask.cdap.internal.app.runtime.schedule.store.ScheduleStoreTableUtil;
 import co.cask.cdap.internal.app.store.DefaultStore;
@@ -106,6 +107,7 @@ public class UpgradeTool {
 
   private Store store;
   private FileMetaDataManager fileMetaDataManager;
+  private AdapterService adapterService;
 
   /**
    * Set of Action available in this tool.
@@ -389,40 +391,41 @@ public class UpgradeTool {
   }
 
   private void performUpgrade() throws Exception {
-    LOG.info("Upgrading System and User Datasets ...");
-    HBaseAdmin hBaseAdmin = new HBaseAdmin(hConf);
-    DatasetUpgrader dsUpgrade = injector.getInstance(DatasetUpgrader.class);
-    dsUpgrade.upgrade();
-    hBaseTableUtil.dropTable(hBaseAdmin, dsUpgrade.getDatasetInstanceMDSUpgrader().getOldDatasetInstanceTableId());
-    hBaseTableUtil.dropTable(hBaseAdmin, dsUpgrade.getDatasetTypeMDSUpgrader().getOldDatasetTypeTableId());
-
-    LOG.info("Upgrading application metadata ...");
-    MDSUpgrader mdsUpgrader = injector.getInstance(MDSUpgrader.class);
-    mdsUpgrader.upgrade();
-    hBaseTableUtil.dropTable(hBaseAdmin, mdsUpgrader.getOldAppMetaTableId());
-
-    LOG.info("Upgrading archives and files ...");
-    ArchiveUpgrader archiveUpgrader = injector.getInstance(ArchiveUpgrader.class);
-    archiveUpgrader.upgrade();
-
-    LOG.info("Upgrading logs meta data ...");
-    getFileMetaDataManager().upgrade();
-    hBaseTableUtil.dropTable(hBaseAdmin, getFileMetaDataManager().getOldLogMetaTableId());
-
-    LOG.info("Upgrading stream state store table ...");
-    StreamStateStoreUpgrader streamStateStoreUpgrader = injector.getInstance(StreamStateStoreUpgrader.class);
-    streamStateStoreUpgrader.upgrade();
-
-    LOG.info("Upgrading queue.config table ...");
-    QueueConfigUpgrader queueConfigUpgrader = injector.getInstance(QueueConfigUpgrader.class);
-    queueConfigUpgrader.upgrade();
-
-    LOG.info("Upgrading metrics.kafka.meta table ...");
-    MetricsKafkaUpgrader metricsKafkaUpgrader = injector.getInstance(MetricsKafkaUpgrader.class);
-    if (metricsKafkaUpgrader.tableExists()) {
-      metricsKafkaUpgrader.upgrade();
-      hBaseTableUtil.dropTable(hBaseAdmin, metricsKafkaUpgrader.getOldKafkaMetricsTableId());
-    }
+//    LOG.info("Upgrading System and User Datasets ...");
+//    HBaseAdmin hBaseAdmin = new HBaseAdmin(hConf);
+//    DatasetUpgrader dsUpgrade = injector.getInstance(DatasetUpgrader.class);
+//    dsUpgrade.upgrade();
+//    hBaseTableUtil.dropTable(hBaseAdmin, dsUpgrade.getDatasetInstanceMDSUpgrader().getOldDatasetInstanceTableId());
+//    hBaseTableUtil.dropTable(hBaseAdmin, dsUpgrade.getDatasetTypeMDSUpgrader().getOldDatasetTypeTableId());
+//
+//    LOG.info("Upgrading application metadata ...");
+//    MDSUpgrader mdsUpgrader = injector.getInstance(MDSUpgrader.class);
+//    mdsUpgrader.upgrade();
+//    hBaseTableUtil.dropTable(hBaseAdmin, mdsUpgrader.getOldAppMetaTableId());
+//
+//    LOG.info("Upgrading archives and files ...");
+//    ArchiveUpgrader archiveUpgrader = injector.getInstance(ArchiveUpgrader.class);
+//    archiveUpgrader.upgrade();
+//
+//    LOG.info("Upgrading logs meta data ...");
+//    getFileMetaDataManager().upgrade();
+//    hBaseTableUtil.dropTable(hBaseAdmin, getFileMetaDataManager().getOldLogMetaTableId());
+//
+//    LOG.info("Upgrading stream state store table ...");
+//    StreamStateStoreUpgrader streamStateStoreUpgrader = injector.getInstance(StreamStateStoreUpgrader.class);
+//    streamStateStoreUpgrader.upgrade();
+//
+//    LOG.info("Upgrading queue.config table ...");
+//    QueueConfigUpgrader queueConfigUpgrader = injector.getInstance(QueueConfigUpgrader.class);
+//    queueConfigUpgrader.upgrade();
+//
+//    LOG.info("Upgrading metrics.kafka.meta table ...");
+//    MetricsKafkaUpgrader metricsKafkaUpgrader = injector.getInstance(MetricsKafkaUpgrader.class);
+//    if (metricsKafkaUpgrader.tableExists()) {
+//      metricsKafkaUpgrader.upgrade();
+//      hBaseTableUtil.dropTable(hBaseAdmin, metricsKafkaUpgrader.getOldKafkaMetricsTableId());
+//    }
+    getAdapterService().upgrade();
   }
 
   public static void main(String[] args) {
@@ -504,5 +507,13 @@ public class UpgradeTool {
                                                          Names.named("fileMetaDataManager")));
     }
     return fileMetaDataManager;
+  }
+
+  private AdapterService getAdapterService() {
+    if (adapterService == null) {
+      adapterService = injector.getInstance(Key.get(AdapterService.class,
+                                                         Names.named("adapterService")));
+    }
+    return adapterService;
   }
 }
