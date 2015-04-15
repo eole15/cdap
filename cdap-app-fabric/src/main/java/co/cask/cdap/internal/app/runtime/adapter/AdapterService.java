@@ -36,11 +36,13 @@ import co.cask.cdap.internal.app.deploy.pipeline.ApplicationDeployScope;
 import co.cask.cdap.internal.app.deploy.pipeline.ApplicationWithPrograms;
 import co.cask.cdap.internal.app.deploy.pipeline.DeploymentInfo;
 import co.cask.cdap.internal.app.deploy.pipeline.adapter.AdapterDeploymentInfo;
+import co.cask.cdap.internal.app.namespace.NamespaceAdmin;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
 import co.cask.cdap.internal.app.runtime.schedule.SchedulerException;
 import co.cask.cdap.proto.AdapterConfig;
 import co.cask.cdap.proto.Id;
+import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.templates.AdapterSpecification;
 import com.google.common.annotations.VisibleForTesting;
@@ -89,6 +91,7 @@ public class AdapterService extends AbstractIdleService {
   private final CConfiguration configuration;
   private final Scheduler scheduler;
   private final Store store;
+  private final NamespaceAdmin namespaceAdmin;
   private final NamespacedLocationFactory namespacedLocationFactory;
   // template name to template info mapping
   private Map<String, ApplicationTemplateInfo> appTemplateInfos;
@@ -101,11 +104,13 @@ public class AdapterService extends AbstractIdleService {
                         ManagerFactory<DeploymentInfo, ApplicationWithPrograms> templateManagerFactory,
                         @Named("adapters")
                         ManagerFactory<AdapterDeploymentInfo, AdapterSpecification> adapterManagerFactory,
-                        NamespacedLocationFactory namespacedLocationFactory) {
+                        NamespacedLocationFactory namespacedLocationFactory,
+                        NamespaceAdmin namespaceAdmin) {
     this.configuration = configuration;
     this.scheduler = scheduler;
     this.namespacedLocationFactory = namespacedLocationFactory;
     this.store = store;
+    this.namespaceAdmin = namespaceAdmin;
     this.templateManagerFactory = templateManagerFactory;
     this.adapterManagerFactory = adapterManagerFactory;
     this.appTemplateInfos = Maps.newHashMap();
@@ -524,5 +529,18 @@ public class AdapterService extends AbstractIdleService {
     }
 
     return new ApplicationTemplateInfo(jarFile, spec.getName(), spec.getDescription(), programType, fileHash);
+  }
+
+  protected void upgrade() {
+    List<NamespaceMeta> namespaceMetas = namespaceAdmin.listNamespaces();
+    Collection<AdapterSpecification> allAdapters = Lists.newArrayList();
+    for (NamespaceMeta namespaceMeta : namespaceMetas) {
+      allAdapters.addAll(store.getAllAdapters(Id.Namespace.from(namespaceMeta.getName())));
+      store.removeAllAdapters(Id.Namespace.from(namespaceMeta.getName()));
+    }
+
+    for (AdapterSpecification adapter : allAdapters) {
+      LOG.info("Poop: {}", adapter.getName());
+    }
   }
 }
