@@ -19,6 +19,8 @@ package co.cask.cdap.gateway.handlers;
 import co.cask.cdap.api.schedule.SchedulableProgramType;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
 import co.cask.cdap.app.ApplicationSpecification;
+import co.cask.cdap.app.mapreduce.MRJobClient;
+import co.cask.cdap.app.mapreduce.MapReduceMetricsInfo;
 import co.cask.cdap.app.runtime.ProgramController;
 import co.cask.cdap.app.runtime.ProgramRuntimeService;
 import co.cask.cdap.app.runtime.RunIds;
@@ -30,6 +32,8 @@ import co.cask.cdap.config.PreferencesStore;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.gateway.auth.Authenticator;
 import co.cask.cdap.internal.app.runtime.schedule.Scheduler;
+import co.cask.cdap.internal.app.services.ProgramLifecycleService;
+import co.cask.cdap.internal.app.services.PropertiesResolver;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.ProgramStatus;
 import co.cask.cdap.proto.ProgramType;
@@ -40,7 +44,6 @@ import com.google.common.collect.Lists;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.twill.discovery.DiscoveryServiceClient;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -67,12 +70,14 @@ public class WorkflowHttpHandler extends ProgramLifecycleHttpHandler {
 
   @Inject
   public WorkflowHttpHandler(Authenticator authenticator, Store store, WorkflowClient workflowClient,
-                             Configuration hConf, CConfiguration configuration, ProgramRuntimeService runtimeService,
+                             CConfiguration configuration, ProgramRuntimeService runtimeService,
                              DiscoveryServiceClient discoveryServiceClient, QueueAdmin queueAdmin, Scheduler scheduler,
                              PreferencesStore preferencesStore, NamespacedLocationFactory namespacedLocationFactory,
-                             MRJobClient mrJobClient) {
-    super(authenticator, store, configuration, runtimeService, discoveryServiceClient,
-          queueAdmin, scheduler, preferencesStore, namespacedLocationFactory, mrJobClient);
+                             MRJobClient mrJobClient, MapReduceMetricsInfo mapReduceMetricsInfo,
+                             ProgramLifecycleService lifecycleService, PropertiesResolver resolver) {
+    super(authenticator, store, configuration, runtimeService, lifecycleService, discoveryServiceClient,
+          queueAdmin, scheduler, preferencesStore, namespacedLocationFactory, mrJobClient,
+          mapReduceMetricsInfo, resolver);
     this.workflowClient = workflowClient;
   }
 

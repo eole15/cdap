@@ -16,26 +16,25 @@
 
 package co.cask.cdap.templates.etl.batch.sinks;
 
+import co.cask.cdap.api.dataset.lib.KeyValueTable;
 import co.cask.cdap.templates.etl.api.Property;
 import co.cask.cdap.templates.etl.api.StageConfigurer;
-import co.cask.cdap.templates.etl.api.batch.BatchSink;
-import co.cask.cdap.templates.etl.api.batch.BatchSinkContext;
+import co.cask.cdap.templates.etl.api.config.ETLStage;
 
 /**
  * CDAP Table Dataset Batch Sink.
  */
-public class KVTableSink extends BatchSink<byte[], byte[]> {
-  private static final String TABLE_NAME = "name";
+public class KVTableSink extends BatchWritableSink<byte[], byte[]> {
 
   @Override
   public void configure(StageConfigurer configurer) {
     configurer.setName("KVTableSink");
     configurer.setDescription("CDAP Key Value Table Dataset Batch Sink");
-    configurer.addProperty(new Property(TABLE_NAME, "Dataset Name", true));
+    configurer.addProperty(new Property(NAME, "Dataset Name", true));
   }
 
   @Override
-  public void prepareJob(BatchSinkContext context) {
-    context.setOutput(context.getRuntimeArguments().get(TABLE_NAME));
+  protected String getDatasetType(ETLStage config) {
+    return KeyValueTable.class.getName();
   }
 }
