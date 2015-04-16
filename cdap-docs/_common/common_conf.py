@@ -26,7 +26,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-wise_version = "0.3.0"
+cdap_apps_version = "0.4.0-SNAPSHOT"
 
 import sys
 import os
@@ -65,7 +65,7 @@ def print_sdk_version():
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.3.1'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -80,6 +80,7 @@ extensions = [
 ]
 
 intersphinx_mapping = {
+  'introduction': ('../../introduction/',        os.path.abspath('../../introduction/build/html/objects.inv')),
   'developers':   ('../../developers-manual/',   os.path.abspath('../../developers-manual/build/html/objects.inv')),
   'users':        ('../../users-manual',         os.path.abspath('../../users-manual/build/html/objects.inv')),
   'admin':        ('../../admin-manual/',        os.path.abspath('../../admin-manual/build/html/objects.inv')),
@@ -137,6 +138,8 @@ rst_epilog = """
 .. |--| unicode:: U+2013   .. en dash
 .. |---| unicode:: U+2014  .. em dash, trimming surrounding whitespace
    :trim:
+   
+.. |non-breaking-space| unicode:: U+00A0 .. non-breaking space
 """
 
 if version:
@@ -163,10 +166,14 @@ if copyright:
 .. |copyright| replace:: %(copyright)s
 """ % {'copyright': copyright}
 
-if wise_version:
+if cdap_apps_version:
     rst_epilog = rst_epilog + """
-.. |wise-version| replace:: %(wise-version)s
-""" % {'wise-version': wise_version}
+.. |cdap-apps-version| replace:: %(cdap-apps-version)s
+
+.. |literal-cdap-apps-version| replace:: ``%(cdap-apps-version)s``
+
+""" % {'cdap-apps-version': cdap_apps_version}
+
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -241,7 +248,8 @@ html_theme = 'cdap'
 # Fields: directory, manual name, icon 
 # icon: "" for none, "new-icon" for the ico_new.png
 manuals_list = [
-    ["developers-manual",   u"Developers’ Manual",             "",],
+    ["introduction",        "Introduction to CDAP",            "",],
+    ["developers-manual",  u"Developers’ Manual",              "",],
     ["users-manual",        u"Users’ Manual",                  "",],
     ["admin-manual",        "Administration Manual",           "",],
     ["integrations",        "Integrations",                    "",],

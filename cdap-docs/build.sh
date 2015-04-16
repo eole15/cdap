@@ -61,6 +61,7 @@ function usage() {
   echo "  Options (select one)"
   echo "    all            Clean build of everything: HTML docs and Javadocs, GitHub and Web versions"
   echo ""
+  echo "    doc            Clean build of just the outer level HTML docs, skipping Javadocs and zipping"
   echo "    docs           Clean build of just the HTML docs, skipping Javadocs, zipped for placing on docs.cask.co webserver"
   echo "    docs-github    Clean build of HTML docs and Javadocs, zipped for placing on GitHub"
   echo "    docs-web       Clean build of HTML docs and Javadocs, zipped for placing on docs.cask.co webserver"
@@ -79,6 +80,7 @@ function usage() {
 function run_command() {
   case "$1" in
     all )               build_all; exit 1;;
+    doc )               build_docs_outer_level; exit 1;;
     docs )              build_docs; exit 1;;
     docs-github )       build_docs_github; exit 1;;
     docs-web )          build_docs_web; exit 1;;
@@ -131,8 +133,9 @@ function build_docs_outer_level() {
   copy_source users-manual        "Users Manual"
   copy_source admin-manual        "Administration Manual"
   copy_source integrations        "Integrations"
-  copy_source examples-manual     "Examples, Guides, and Tutorials"
+  copy_source introduction        "Introduction"
   copy_source reference-manual    "Reference Manual"
+  copy_source examples-manual     "Examples, Guides, and Tutorials"
 
   # Build outer-level docs
   cd $SCRIPT_PATH
@@ -145,7 +148,9 @@ function build_docs_outer_level() {
   else
     sphinx-build -D googleanalytics_id=$1 -D googleanalytics_enabled=1 -b html -d build/doctrees build/source build/html
   fi
-  
+}
+
+function copy_docs_lower_level() {
   echo ""
   echo "========================================================"
   echo "Copying lower-level docs..."
@@ -155,6 +160,7 @@ function build_docs_outer_level() {
   copy_html admin-manual
   copy_html developers-manual
   copy_html integrations
+  copy_html introduction
   copy_html reference-manual
   copy_html examples-manual
 
@@ -194,7 +200,7 @@ function build_javadocs() {
 }
 
 function build_docs_javadocs() {
-  build "build"
+  build_docs_inner_level "build"
 }
 
 function build_docs() {
@@ -210,21 +216,23 @@ function build_docs_web() {
 }
 
 function _build_docs() {
-  build $1
+  build_docs_inner_level $1
   build_docs_outer_level $2
+  copy_docs_lower_level
   build_zip $3
   zip_extras $4
   display_version
   bell "Building $1 completed."
 }
 
-function build() {
+function build_docs_inner_level() {
   build_specific_doc developers-manual $1
   build_specific_doc users-manual $1
   build_specific_doc admin-manual $1
   build_specific_doc integrations $1
-  build_specific_doc examples-manual $1
+  build_specific_doc introduction $1
   build_specific_doc reference-manual $1
+  build_specific_doc examples-manual $1
 }
 
 function build_specific_doc() {
