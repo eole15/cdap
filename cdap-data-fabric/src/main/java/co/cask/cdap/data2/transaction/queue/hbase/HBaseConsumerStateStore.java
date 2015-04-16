@@ -22,7 +22,9 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.dataset.table.Table;
 import co.cask.cdap.common.collect.AllCollector;
+import co.cask.cdap.common.collect.AllPairCollector;
 import co.cask.cdap.common.collect.Collector;
+import co.cask.cdap.common.collect.PairCollector;
 import co.cask.cdap.common.queue.QueueName;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.ConsumerGroupConfig;
@@ -35,6 +37,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -368,6 +371,15 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
     return scanBarriers(groupId, new AllCollector<QueueBarrier>()).finish(new ArrayList<QueueBarrier>());
   }
 
+  /**
+   * Gets all barrier information for all groups. The information are sorted in the order of
+   * the barrier changes.
+   */
+  LinkedHashMultimap<Long, QueueBarrier> getAllBarriers() {
+    return scanBarriers(new AllPairCollector<Long, QueueBarrier>()).finishMultimap(
+      LinkedHashMultimap.<Long, QueueBarrier>create());
+  }
+
   void getLatestConsumerGroups(Collection<? super ConsumerGroupConfig> result) {
     Scanner scanner = table.scan(barrierScanStartRow, barrierScanEndRow);
     try {
@@ -391,6 +403,25 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
     }
   }
 
+  private PairCollector<Long, QueueBarrier> scanBarriers(PairCollector<Long, QueueBarrier> collector) {
+    Scanner scanner = table.scan(barrierScanStartRow, barrierScanEndRow);
+    try {
+      Row row;
+      while ((row = scanner.next()) != null) {
+        Map<Long, QueueBarrier> info = decodeBarrierInfo(row);
+        if (info != null) {
+          for (Map.Entry<Long, QueueBarrier> entry : info.entrySet()) {
+            if (!collector.addElement(entry)) {
+              return collector;
+            }
+          }
+        }
+      }
+    } finally {
+      scanner.close();
+    }
+    return collector;
+  }
 
   private Collector<QueueBarrier> scanBarriers(long groupId, Collector<QueueBarrier> collector) {
     Scanner scanner = table.scan(barrierScanStartRow, barrierScanEndRow);
@@ -499,8 +530,26 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
   }
 
   @Nullable
+  private Map<Long, QueueBarrier> decodeBarrierInfo(Row row) {
+    Map<Long, QueueBarrier> barrierInfo = Maps.newHashMap();
+    Map<byte[], byte[]> columns = row.getColumns();
+    for (byte[] columnKey : columns.keySet()) {
+      byte[] groupInfo = row.get(columnKey);
+      QueueBarrier barrier = decodeBarrierInfo(row.getRow(), groupInfo);
+      if (barrier != null) {
+        barrierInfo.put(barrier.getGroupConfig().getGroupId(), barrier);
+      }
+    }
+    return barrierInfo;
+  }
+
+  @Nullable
   private QueueBarrier decodeBarrierInfo(Row row, long groupId) {
-    byte[] groupInfo = row.get(Bytes.toBytes(groupId));
+    return decodeBarrierInfo(row.getRow(), row.get(Bytes.toBytes(groupId)));
+  }
+
+  @Nullable
+  private QueueBarrier decodeBarrierInfo(byte[] rowKey, @Nullable byte[] groupInfo) {
     if (groupInfo == null) {
       return null;
     }
