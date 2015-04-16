@@ -18,10 +18,12 @@
 
 # Builds:
 #
-# admin-manual
 # developers-manual
-# reference-manual
+# users-manual
+# admin-manual
+# integrations
 # examples-manual
+# reference-manual
 
 # Builds each of these individually, and then packages them into a single zip file for distribution.
 # _common directory holds common files and scripts.
@@ -125,11 +127,12 @@ function build_docs_outer_level() {
   version
   
   # Copies placeholder file and renames it
-  copy_source admin-manual        "Administration Manual"
   copy_source developers-manual   "Developers’ Manual"
+  copy_source users-manual        "Users Manual"
+  copy_source admin-manual        "Administration Manual"
   copy_source integrations        "Integrations"
-  copy_source reference-manual    "Reference Manual"
   copy_source examples-manual     "Examples, Guides, and Tutorials"
+  copy_source reference-manual    "Reference Manual"
 
   # Build outer-level docs
   cd $SCRIPT_PATH
@@ -216,11 +219,12 @@ function _build_docs() {
 }
 
 function build() {
-  build_specific_doc admin-manual $1
   build_specific_doc developers-manual $1
+  build_specific_doc users-manual $1
+  build_specific_doc admin-manual $1
   build_specific_doc integrations $1
-  build_specific_doc reference-manual $1
   build_specific_doc examples-manual $1
+  build_specific_doc reference-manual $1
 }
 
 function build_specific_doc() {
