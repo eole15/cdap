@@ -72,7 +72,7 @@ function test_an_include() {
   if [[ "x${OSTYPE}" == "xdarwin"* ]]; then
     new_md5_hash=`md5 -q ${target}`
   else
-    new_md5_hash=`md5sum ${target} | awk '{print ${1}}'`
+    new_md5_hash=`md5sum ${target} | awk '{print $1}'`
   fi
   
   if [ "x${md5_hash}" != "x${new_md5_hash}" ]; then
