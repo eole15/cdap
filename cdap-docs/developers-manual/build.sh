@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2014 Cask Data, Inc.
+# Copyright © 2014-2015 Cask Data, Inc.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,15 +13,6 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-  
-# Build script for docs
-# Builds the docs (all except javadocs and PDFs) from the .rst source files using Sphinx
-# Builds the javadocs and copies them into place
-# Zips everything up so it can be staged
-# REST PDF is built as a separate target and checked in, as it is only used in SDK and not website
-# Target for building the SDK
-# Targets for both a limited and complete set of javadocs
-# Targets not included in usage are intended for internal usage by script
 
 source ../_common/common-build.sh
 
@@ -68,15 +59,39 @@ function pandoc_includes() {
   rewrite $java_client_working $java_client "{version}" $release_version
 }
 
-function test_includes () {
-  # List of includes to be tested
-  test_an_include cdap-authentication-clients-java.rst
-  test_an_include cdap-authentication-clients-python.rst
-  test_an_include cdap-file-drop-zone.rst
-  test_an_include cdap-file-tailer.rst
-  test_an_include cdap-flume.rst
-  test_an_include cdap-stream-clients-java.rst
-  test_an_include cdap-stream-clients-python.rst
+function test_an_include() {
+  # Tests a file and checks that it hasn't changed.
+  # Uses md5 hashes to monitor if any files have changed.
+  local new_md5_hash
+  local md5_hash=${1}
+  local file_name=${2}
+  
+  local includes_dir=${SCRIPT_PATH}/${BUILD}/${INCLUDES}
+  local target=${includes_dir}/${file_name}
+
+  if [[ "x${OSTYPE}" == "xdarwin"* ]]; then
+    new_md5_hash=`md5 -q ${target}`
+  else
+    new_md5_hash=`md5sum ${target} | awk '{print ${1}}'`
+  fi
+  
+  if [ "x${md5_hash}" != "x${new_md5_hash}" ]; then
+    echo -e "${WARNING} MD5 Hash for ${file_name} has changed! Compare files and update hash!"  
+    echo "Old md5_hash: ${md5_hash} New md5_hash: ${new_md5_hash}"
+  else
+    echo "MD5 Hash for ${file_name} matches"  
+  fi
+}
+
+function test_includes() {
+  echo "Testing includes downloaded and converted from GitHub..."
+  test_an_include b1f5dbf0f08f68d1cee8355d4d627263 cdap-authentication-clients-java.rst
+  test_an_include 7ad6fbad1c5b1309e0667c2ad9ab537f cdap-authentication-clients-python.rst
+  test_an_include 5923713fdb6e4d542fb6861a7440c0ea cdap-file-drop-zone.rst
+  test_an_include 1443cc94b19229a45ceb163a04894839 cdap-file-tailer.rst
+  test_an_include 5dad2bde949162563d504d0d52daa474 cdap-flume.rst
+  test_an_include 02d61be34767136301242d39ef9c3940 cdap-stream-clients-java.rst
+  test_an_include 971837a0693734ba33dee581a4af26c4 cdap-stream-clients-python.rst
 }
 
 run_command $1
