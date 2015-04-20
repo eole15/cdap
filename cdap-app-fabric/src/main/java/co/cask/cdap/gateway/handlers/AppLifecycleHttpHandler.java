@@ -212,15 +212,6 @@ public class AppLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
                         @PathParam("app-id") final String appId) {
     try {
       Id.Application id = Id.Application.from(namespaceId, appId);
-
-      // Deletion of a particular application is not allowed if that application is used by an adapter
-      if (!adapterService.canDeleteApp(id)) {
-        responder.sendString(HttpResponseStatus.BAD_REQUEST, String.format(
-          "Cannot delete Application %s. An ApplicationTemplate exists with a conflicting name.", appId));
-
-        return;
-      }
-
       AppFabricServiceStatus appStatus = removeApplication(id);
       LOG.trace("Delete call for Application {} at AppFabricHttpHandler", appId);
       responder.sendString(appStatus.getCode(), appStatus.getMessage());
@@ -338,9 +329,6 @@ public class AppLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
         case FLOW:
           stopProgramIfRunning(programId, type);
           break;
-        case PROCEDURE:
-          stopProgramIfRunning(programId, type);
-          break;
         case WORKFLOW:
           scheduler.deleteSchedules(programId, SchedulableProgramType.WORKFLOW);
           break;
@@ -426,6 +414,11 @@ public class AppLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
   }
 
   private AppFabricServiceStatus removeApplication(final Id.Application appId) throws Exception {
+    // Deletion of a particular application is not allowed if that application is used by an adapter
+    if (!adapterService.canDeleteApp(appId)) {
+      return AppFabricServiceStatus.ADAPTER_CONFLICT;
+    }
+
     //Check if all are stopped.
     boolean appRunning = runtimeService.checkAnyRunning(new Predicate<Id.Program>() {
       @Override
@@ -515,7 +508,6 @@ public class AppLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
     ApplicationSpecification appSpec = store.getApplication(appId);
     return Iterables.concat(appSpec.getFlows().values(),
                             appSpec.getMapReduce().values(),
-                            appSpec.getProcedures().values(),
                             appSpec.getServices().values(),
                             appSpec.getSpark().values(),
                             appSpec.getWorkers().values(),
@@ -580,10 +572,6 @@ public class AppLifecycleHttpHandler extends AbstractAppFabricHttpHandler {
     }
     for (ProgramSpecification programSpec : spec.getMapReduce().values()) {
       programs.add(new ProgramRecord(ProgramType.MAPREDUCE, spec.getName(),
-                                     programSpec.getName(), programSpec.getDescription()));
-    }
-    for (ProgramSpecification programSpec : spec.getProcedures().values()) {
-      programs.add(new ProgramRecord(ProgramType.PROCEDURE, spec.getName(),
                                      programSpec.getName(), programSpec.getDescription()));
     }
     for (ProgramSpecification programSpec : spec.getServices().values()) {

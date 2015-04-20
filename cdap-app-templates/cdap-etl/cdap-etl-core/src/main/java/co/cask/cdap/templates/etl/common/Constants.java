@@ -42,7 +42,13 @@ public final class Constants {
    * Constants related to Transform.
    */
   public static final class Transform {
-    public static final String CONFIGS = "templates.etl.adapter.transform.configs";
     public static final String SPECIFICATIONS = "templates.etl.adapter.transform.specifications";
+  }
+
+  /**
+   * Constants related to Realtime Adapter.
+   */
+  public static final class Realtime {
+    public static final String UNIQUE_ID = "uniqueid";
   }
 }

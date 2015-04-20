@@ -47,10 +47,8 @@ import co.cask.cdap.data.stream.StreamFileWriterFactory;
 import co.cask.cdap.data.stream.service.BasicStreamWriterSizeCollector;
 import co.cask.cdap.data.stream.service.LocalStreamFileJanitorService;
 import co.cask.cdap.data.stream.service.StreamFetchHandler;
-import co.cask.cdap.data.stream.service.StreamFetchHandlerV2;
 import co.cask.cdap.data.stream.service.StreamFileJanitorService;
 import co.cask.cdap.data.stream.service.StreamHandler;
-import co.cask.cdap.data.stream.service.StreamHandlerV2;
 import co.cask.cdap.data.stream.service.StreamWriterSizeCollector;
 import co.cask.cdap.data2.datafabric.dataset.service.DatasetService;
 import co.cask.cdap.data2.datafabric.dataset.service.executor.DatasetOpExecutor;
@@ -78,7 +76,6 @@ import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.test.internal.ApplicationManagerFactory;
 import co.cask.cdap.test.internal.DefaultApplicationManager;
-import co.cask.cdap.test.internal.DefaultProcedureClient;
 import co.cask.cdap.test.internal.DefaultStreamWriter;
 import co.cask.cdap.test.internal.LocalNamespaceClient;
 import co.cask.cdap.test.internal.StreamWriterFactory;
@@ -226,8 +223,6 @@ public class ConfigurableTestBase {
       new AbstractModule() {
         @Override
         protected void configure() {
-          bind(StreamHandlerV2.class).in(Scopes.SINGLETON);
-          bind(StreamFetchHandlerV2.class).in(Scopes.SINGLETON);
           bind(StreamHandler.class).in(Scopes.SINGLETON);
           bind(StreamFetchHandler.class).in(Scopes.SINGLETON);
           bind(AbstractNamespaceClient.class).to(LocalNamespaceClient.class).in(Scopes.SINGLETON);
@@ -252,8 +247,6 @@ public class ConfigurableTestBase {
                     .build(ApplicationManagerFactory.class));
           install(new FactoryModuleBuilder().implement(StreamWriter.class, DefaultStreamWriter.class)
                     .build(StreamWriterFactory.class));
-          install(new FactoryModuleBuilder().implement(ProcedureClient.class, DefaultProcedureClient.class)
-                    .build(co.cask.cdap.test.internal.ProcedureClientFactory.class));
           bind(TemporaryFolder.class).toInstance(tmpFolder);
         }
       }
@@ -348,8 +341,7 @@ public class ConfigurableTestBase {
 
   /**
    * Deploys an {@link Application}. The {@link co.cask.cdap.api.flow.Flow Flows} and
-   * {@link co.cask.cdap.api.procedure.Procedure Procedures} defined in the application
-   * must be in the same or children package as the application.
+   * other programs defined in the application must be in the same or children package as the application.
    *
    * @param applicationClz The application class
    * @return An {@link co.cask.cdap.test.ApplicationManager} to manage the deployed application.
@@ -366,8 +358,7 @@ public class ConfigurableTestBase {
 
   /**
    * Deploys an {@link Application}. The {@link co.cask.cdap.api.flow.Flow Flows} and
-   * {@link co.cask.cdap.api.procedure.Procedure Procedures} defined in the application
-   * must be in the same or children package as the application.
+   * other programs defined in the application must be in the same or children package as the application.
    *
    * @param applicationClz The application class
    * @return An {@link co.cask.cdap.test.ApplicationManager} to manage the deployed application.

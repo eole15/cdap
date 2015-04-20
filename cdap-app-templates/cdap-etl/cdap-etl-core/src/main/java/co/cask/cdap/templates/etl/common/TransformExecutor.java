@@ -19,12 +19,14 @@ package co.cask.cdap.templates.etl.common;
 import co.cask.cdap.templates.etl.api.Transform;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Execution of Transforms one iteration at a time.
+ *
+ * @param <IN> the type of input object to the first transform
+ * @param <OUT> the type of object output by the last transform
  */
-public final class TransformExecutor {
+public class TransformExecutor<IN, OUT> {
   private final List<Transform> transformList;
   private DefaultEmitter previousEmitter;
   private DefaultEmitter currentEmitter;
@@ -35,12 +37,12 @@ public final class TransformExecutor {
     this.currentEmitter = new DefaultEmitter();
   }
 
-  public Iterable<Map.Entry> runOneIteration(Object key, Object value) throws Exception {
+  public Iterable<OUT> runOneIteration(IN input) throws Exception {
     previousEmitter.reset();
-    previousEmitter.emit(key, value);
+    previousEmitter.emit(input);
     for (Transform transform : transformList) {
-      for (Map.Entry entry : previousEmitter) {
-        transform.transform(entry.getKey(), entry.getValue(), currentEmitter);
+      for (Object transformedVal : previousEmitter) {
+        transform.transform(transformedVal, currentEmitter);
       }
       previousEmitter.reset();
       DefaultEmitter temp = previousEmitter;

@@ -70,7 +70,7 @@ import javax.ws.rs.QueryParam;
  */
 @Path(Constants.Gateway.API_VERSION_3 + "/metrics")
 public class MetricsHandler extends AuthenticatedHttpHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(MetricsDiscoveryHandler.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MetricsHandler.class);
   private static final Gson GSON = new Gson();
 
   // constants used for request query parsing
@@ -125,9 +125,7 @@ public class MetricsHandler extends AuthenticatedHttpHandler {
 
       .put(Constants.Metrics.Tag.WORKFLOW, "workflow")
 
-      .put(Constants.Metrics.Tag.SPARK, "spark")
-
-      .put(Constants.Metrics.Tag.PROCEDURE, "procedure").build();
+      .put(Constants.Metrics.Tag.SPARK, "spark").build();
 
     tagNameToHuman = mapping;
     humanToTagName = mapping.inverse();
