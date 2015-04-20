@@ -101,6 +101,10 @@ public class UsageDataset extends MetadataStoreDataset {
 
   }
 
+  public void unregister(Id.Program programId, Id.Stream streamId) {
+
+  }
+
   /**
    * Returns datasets used by a program.
    * @param programId program

@@ -105,4 +105,19 @@ public interface StreamAdmin {
    */
   void drop(Id.Stream streamId) throws Exception;
 
+  /**
+   * Register stream used by program.
+   *
+   * @param streamId the stream being used
+   * @param programId the program that is using the stream
+   */
+  public void register(Id.Stream streamId, Id.Program programId);
+
+  /**
+   * Unregister all streams used by program.
+   *
+   * @param programId the program that is using the stream
+   */
+  public void unregister(Id.Program programId);
+
 }

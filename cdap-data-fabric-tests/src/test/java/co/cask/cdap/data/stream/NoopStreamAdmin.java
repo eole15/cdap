@@ -77,4 +77,12 @@ public class NoopStreamAdmin implements StreamAdmin {
   public void drop(Id.Stream streamId) throws Exception {
   }
 
+  @Override
+  public void register(Id.Stream streamId, Id.Program programId) {
+  }
+
+  @Override
+  public void unregister(Id.Program programId) {
+  }
+
 }
