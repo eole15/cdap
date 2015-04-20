@@ -101,7 +101,8 @@ public class BasicWorkerContext extends AbstractContext implements WorkerContext
     this.userMetrics = new ProgramUserMetrics(getMetricCollector(metricsCollectionService, program,
                                                                  runId.getId(), instanceId));
     this.runtimeArgs = runtimeArgs.asMap();
-    this.streamWriter = new DefaultStreamWriter(program.getNamespaceId(), getDiscoveryServiceClient());
+    this.streamWriter = new DefaultStreamWriter(program.getNamespaceId(), program.getId(), datasetFramework,
+                                                getDiscoveryServiceClient());
 
     // The cache expiry should be greater than (2 * transaction.timeout) and at least 2 hours.
     // This ensures that when a dataset instance is requested multiple times during a single transaction,
