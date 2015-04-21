@@ -36,6 +36,7 @@ import co.cask.tephra.DefaultTransactionExecutor;
 import co.cask.tephra.TransactionAware;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.inmemory.MinimalTxSystemClient;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -92,6 +93,28 @@ public abstract class AbstractDatasetFrameworkTest {
         return registry;
       }
     };
+  }
+
+  @Test
+  public void testDoubleDataset() throws Exception {
+    Id.DatasetInstance myTable = Id.DatasetInstance.from("default", "nods");
+
+    DatasetFramework framework = getFramework();
+    framework.addInstance("table", myTable, DatasetProperties.EMPTY);
+
+    Table ds1 = framework.getDataset(myTable, ImmutableMap.<String, String>of(), null);
+    Table ds2 = framework.getDataset(myTable, ImmutableMap.<String, String>of(), null);
+
+    Assert.assertNotNull(ds1);
+    Assert.assertNotNull(ds2);
+
+    String row = "red";
+    String column = "llama";
+    String value = "turkey";
+
+    ds1.put(Bytes.toBytes(row), Bytes.toBytes(column), Bytes.toBytes(value));
+    Assert.assertEquals(value, Bytes.toString(ds1.get(Bytes.toBytes(row), Bytes.toBytes(column))));
+    Assert.assertEquals(value, Bytes.toString(ds2.get(Bytes.toBytes(row), Bytes.toBytes(column))));
   }
 
   @Test
