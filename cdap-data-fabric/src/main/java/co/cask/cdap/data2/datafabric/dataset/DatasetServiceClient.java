@@ -82,7 +82,7 @@ class DatasetServiceClient {
   }
 
   @Nullable
-  public DatasetMeta getInstance(String instanceName) throws DatasetManagementException {
+  public DatasetMeta getInstance(String instanceName, @Nullable Id owner) throws DatasetManagementException {
     HttpResponse response = doGet("datasets/" + instanceName);
     if (HttpResponseStatus.NOT_FOUND.getCode() == response.getResponseCode()) {
       return null;
@@ -93,6 +93,11 @@ class DatasetServiceClient {
     }
 
     return GSON.fromJson(new String(response.getResponseBody(), Charsets.UTF_8), DatasetMeta.class);
+  }
+
+  @Nullable
+  public DatasetMeta getInstance(String instanceName) throws DatasetManagementException {
+    return getInstance(instanceName, null);
   }
 
   public Collection<DatasetSpecificationSummary> getAllInstances() throws DatasetManagementException {
