@@ -17,7 +17,6 @@
 package co.cask.cdap.internal.app.store;
 
 import co.cask.cdap.api.ProgramSpecification;
-import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.api.dataset.DatasetAdmin;
 import co.cask.cdap.api.dataset.DatasetDefinition;
@@ -45,13 +44,13 @@ import co.cask.cdap.data2.dataset2.tx.Transactional;
 import co.cask.cdap.internal.app.ForwardingApplicationSpecification;
 import co.cask.cdap.internal.app.ForwardingFlowSpecification;
 import co.cask.cdap.internal.app.program.ProgramBundle;
-import co.cask.cdap.internal.app.runtime.adapter.AdapterStatus;
+import co.cask.cdap.proto.AdapterSpecification;
+import co.cask.cdap.proto.AdapterStatus;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramRunStatus;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.RunRecord;
-import co.cask.cdap.templates.AdapterSpecification;
 import co.cask.tephra.TransactionExecutor;
 import co.cask.tephra.TransactionExecutorFactory;
 import com.google.common.annotations.VisibleForTesting;

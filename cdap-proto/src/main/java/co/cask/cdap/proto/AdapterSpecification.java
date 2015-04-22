@@ -14,16 +14,13 @@
  * the License.
  */
 
-package co.cask.cdap.templates;
+package co.cask.cdap.proto;
 
 import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.data.stream.StreamSpecification;
 import co.cask.cdap.api.schedule.ScheduleSpecification;
-import co.cask.cdap.data.dataset.DatasetCreationSpec;
-import co.cask.cdap.proto.Id;
-import co.cask.cdap.proto.ProgramType;
-import com.clearspring.analytics.util.Preconditions;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 

@@ -28,7 +28,7 @@ import co.cask.cdap.api.spark.SparkSpecification;
 import co.cask.cdap.api.worker.WorkerSpecification;
 import co.cask.cdap.api.workflow.Workflow;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
-import co.cask.cdap.data.dataset.DatasetCreationSpec;
+import co.cask.cdap.proto.DatasetCreationSpec;
 
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -69,7 +69,7 @@ public interface ApplicationSpecification {
 
   /**
    * @return An immutable {@link Map} from {@link co.cask.cdap.api.dataset.Dataset} name to
-   *         {@link co.cask.cdap.data.dataset.DatasetCreationSpec} for {@link co.cask.cdap.api.dataset.Dataset}s
+   *         {@link co.cask.cdap.proto.DatasetCreationSpec} for {@link co.cask.cdap.api.dataset.Dataset}s
    *         configured for the Application.
    */
   Map<String, DatasetCreationSpec> getDatasets();

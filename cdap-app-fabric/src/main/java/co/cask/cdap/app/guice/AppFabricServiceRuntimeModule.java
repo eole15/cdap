@@ -76,7 +76,7 @@ import co.cask.cdap.logging.run.LogSaverStatusServiceManager;
 import co.cask.cdap.metrics.runtime.MetricsProcessorStatusServiceManager;
 import co.cask.cdap.metrics.runtime.MetricsServiceManager;
 import co.cask.cdap.pipeline.PipelineFactory;
-import co.cask.cdap.templates.AdapterSpecification;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.http.HttpHandler;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;

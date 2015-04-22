@@ -21,8 +21,8 @@ import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.data2.dataset2.DatasetFramework;
 import co.cask.cdap.internal.app.deploy.pipeline.DatasetModulesDeployer;
 import co.cask.cdap.pipeline.AbstractStage;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.templates.AdapterSpecification;
 import com.google.common.reflect.TypeToken;
 import org.apache.twill.filesystem.Location;
 

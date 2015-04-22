@@ -233,7 +233,7 @@ public class StandaloneMain {
    * @param error indicates whether this was invoked as the result of an error
    * @throws IllegalArgumentException in case of error
    */
-  static void usage(boolean error) {
+  static void c(boolean error) {
 
     // Which output stream should we use?
     PrintStream out = (error ? System.err : System.out);

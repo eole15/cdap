@@ -40,7 +40,6 @@ import co.cask.cdap.api.worker.WorkerSpecification;
 import co.cask.cdap.api.workflow.ScheduleProgramInfo;
 import co.cask.cdap.api.workflow.Workflow;
 import co.cask.cdap.api.workflow.WorkflowSpecification;
-import co.cask.cdap.data.dataset.DatasetCreationSpec;
 import co.cask.cdap.internal.app.DefaultApplicationSpecification;
 import co.cask.cdap.internal.app.mapreduce.DefaultMapReduceConfigurer;
 import co.cask.cdap.internal.app.services.DefaultServiceConfigurer;
@@ -49,6 +48,7 @@ import co.cask.cdap.internal.app.worker.DefaultWorkerConfigurer;
 import co.cask.cdap.internal.app.workflow.DefaultWorkflowConfigurer;
 import co.cask.cdap.internal.flow.DefaultFlowSpecification;
 import co.cask.cdap.internal.schedule.StreamSizeSchedule;
+import co.cask.cdap.proto.DatasetCreationSpec;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 

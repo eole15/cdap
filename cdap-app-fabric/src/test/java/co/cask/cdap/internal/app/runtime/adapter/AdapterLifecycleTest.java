@@ -25,7 +25,7 @@ import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
 import co.cask.cdap.internal.test.AppJarHelper;
 import co.cask.cdap.proto.AdapterConfig;
-import co.cask.cdap.templates.AdapterSpecification;
+import co.cask.cdap.proto.AdapterSpecification;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.google.gson.Gson;

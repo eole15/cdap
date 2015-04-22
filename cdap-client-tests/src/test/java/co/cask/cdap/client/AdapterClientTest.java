@@ -25,7 +25,7 @@ import co.cask.cdap.common.io.Locations;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.internal.test.AppJarHelper;
 import co.cask.cdap.proto.AdapterConfig;
-import co.cask.cdap.proto.AdapterDetail;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.test.XSlowTests;
 import co.cask.cdap.test.standalone.StandaloneTestBase;
 import com.google.common.io.Files;
@@ -74,7 +74,7 @@ public class AdapterClientTest extends ClientTestBase {
 
   @Test
   public void testAdapters() throws Exception {
-    List<AdapterDetail> initialList = adapterClient.list();
+    List<AdapterSpecification> initialList = adapterClient.list();
     Assert.assertEquals(0, initialList.size());
 
     String adapterName = "someAdapter";
@@ -86,12 +86,12 @@ public class AdapterClientTest extends ClientTestBase {
     // Check that the created adapter is present
     adapterClient.waitForExists("someAdapter", 30, TimeUnit.SECONDS);
     Assert.assertTrue(adapterClient.exists("someAdapter"));
-    AdapterDetail someAdapter = adapterClient.get("someAdapter");
+    AdapterSpecification someAdapter = adapterClient.get("someAdapter");
     Assert.assertNotNull(someAdapter);
 
     // list all adapters
-    List<AdapterDetail> list = adapterClient.list();
-    Assert.assertArrayEquals(new AdapterDetail[] {someAdapter}, list.toArray());
+    List<AdapterSpecification> list = adapterClient.list();
+    Assert.assertArrayEquals(new AdapterSpecification[] {someAdapter}, list.toArray());
 
     // Delete Adapter
     adapterClient.delete(adapterName);
@@ -105,7 +105,7 @@ public class AdapterClientTest extends ClientTestBase {
       // Expected
     }
 
-    List<AdapterDetail> finalList = adapterClient.list();
+    List<AdapterSpecification> finalList = adapterClient.list();
     Assert.assertEquals(0, finalList.size());
   }
 

@@ -1,4 +1,4 @@
-/*
+  /*
  * Copyright © 2015 Cask Data, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -66,11 +66,11 @@ import co.cask.cdap.metrics.store.DefaultMetricStore;
 import co.cask.cdap.metrics.store.MetricDatasetFactory;
 import co.cask.cdap.notifications.feeds.client.NotificationFeedClientModule;
 import co.cask.cdap.notifications.guice.NotificationServiceRuntimeModule;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.proto.Id;
 import co.cask.cdap.proto.NamespaceMeta;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.ScheduledRuntime;
-import co.cask.cdap.templates.AdapterSpecification;
 import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.distributed.TransactionService;
 import com.google.common.base.Throwables;

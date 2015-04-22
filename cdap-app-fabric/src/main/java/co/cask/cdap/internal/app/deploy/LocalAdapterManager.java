@@ -32,8 +32,8 @@ import co.cask.cdap.internal.app.deploy.pipeline.adapter.CreateAdapterStreamsSta
 import co.cask.cdap.internal.app.deploy.pipeline.adapter.DeployAdapterDatasetModulesStage;
 import co.cask.cdap.pipeline.Pipeline;
 import co.cask.cdap.pipeline.PipelineFactory;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.templates.AdapterSpecification;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

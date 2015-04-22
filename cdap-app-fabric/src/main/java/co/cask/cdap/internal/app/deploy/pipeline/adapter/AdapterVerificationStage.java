@@ -18,7 +18,7 @@ package co.cask.cdap.internal.app.deploy.pipeline.adapter;
 
 import co.cask.cdap.app.ApplicationSpecification;
 import co.cask.cdap.pipeline.AbstractStage;
-import co.cask.cdap.templates.AdapterSpecification;
+import co.cask.cdap.proto.AdapterSpecification;
 import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package co.cask.cdap.data.dataset;
+package co.cask.cdap.proto;
 
 import co.cask.cdap.api.dataset.DatasetProperties;
 

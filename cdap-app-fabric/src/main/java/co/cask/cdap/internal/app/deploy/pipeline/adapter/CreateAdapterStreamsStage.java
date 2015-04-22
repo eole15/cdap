@@ -20,8 +20,8 @@ import co.cask.cdap.data2.transaction.stream.StreamAdmin;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.internal.app.deploy.pipeline.StreamCreator;
 import co.cask.cdap.pipeline.AbstractStage;
+import co.cask.cdap.proto.AdapterSpecification;
 import co.cask.cdap.proto.Id;
-import co.cask.cdap.templates.AdapterSpecification;
 import com.google.common.reflect.TypeToken;
 
 /**
