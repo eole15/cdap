@@ -370,8 +370,16 @@ public class InMemoryDatasetFramework implements DatasetFramework {
       }
       LinkedHashSet<String> availableModuleClasses = getAvailableModuleClasses(datasetInstanceId.getNamespace());
       DatasetDefinition def = createRegistry(availableModuleClasses, classLoader).get(spec.getType());
-      return (T) (def.getDataset(DatasetContext.from(datasetInstanceId.getNamespaceId()),
-                                 spec, arguments, classLoader));
+      T result = (T) (def.getDataset(DatasetContext.from(datasetInstanceId.getNamespaceId()),
+                                     spec, arguments, classLoader));
+      if (owner != null) {
+        if (owner instanceof Id.Program) {
+          usageRegistry.register((Id.Program) owner, datasetInstanceId);
+        } else if (owner instanceof Id.Adapter) {
+          usageRegistry.register((Id.Adapter) owner, datasetInstanceId);
+        }
+      }
+      return result;
     } finally {
       readLock.unlock();
     }

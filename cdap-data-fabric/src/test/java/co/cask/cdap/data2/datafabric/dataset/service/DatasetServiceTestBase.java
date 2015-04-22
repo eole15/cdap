@@ -52,6 +52,9 @@ import co.cask.common.http.HttpRequest;
 import co.cask.common.http.HttpRequests;
 import co.cask.common.http.ObjectResponse;
 import co.cask.http.HttpHandler;
+import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionExecutor;
+import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionManager;
 import co.cask.tephra.inmemory.InMemoryTxSystemClient;
 import com.google.common.collect.ImmutableMap;
@@ -160,9 +163,17 @@ public abstract class DatasetServiceTestBase {
       .putAll(DatasetMetaTableUtil.getModules())
       .build();
 
+    TransactionExecutorFactory noOpTxExecutorFactory = new TransactionExecutorFactory() {
+      @Override
+      public TransactionExecutor createExecutor(Iterable<TransactionAware> txAwares) {
+        // NO-OP
+        return null;
+      }
+    };
+
     MDSDatasetsRegistry mdsDatasetsRegistry =
       new MDSDatasetsRegistry(txSystemClient, new InMemoryDatasetFramework(
-        registryFactory, modules, cConf, injector.getInstance(UsageRegistry.class)));
+        registryFactory, modules, cConf, injector.getInstance(TransactionExecutorFactory.class)));
 
     ExploreFacade exploreFacade = new ExploreFacade(new DiscoveryExploreClient(discoveryService), cConf);
     service = new DatasetService(cConf,
@@ -179,7 +190,8 @@ public abstract class DatasetServiceTestBase {
                                  exploreFacade,
                                  new HashSet<DatasetMetricsReporter>(),
                                  new LocalUnderlyingSystemNamespaceAdmin(cConf, namespacedLocationFactory,
-                                                                         exploreFacade));
+                                                                         exploreFacade),
+                                 new UsageRegistry(noOpTxExecutorFactory, dsFramework));
 
     // Start dataset service, wait for it to be discoverable
     service.start();

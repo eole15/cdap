@@ -83,7 +83,12 @@ class DatasetServiceClient {
 
   @Nullable
   public DatasetMeta getInstance(String instanceName, @Nullable Id owner) throws DatasetManagementException {
-    HttpResponse response = doGet("datasets/" + instanceName);
+    String query = "";
+    if (owner != null) {
+      query = "?ownerType=" + owner.getIdType() + "&ownerId=" + owner;
+    }
+
+    HttpResponse response = doGet("datasets/" + instanceName + query);
     if (HttpResponseStatus.NOT_FOUND.getCode() == response.getResponseCode()) {
       return null;
     }

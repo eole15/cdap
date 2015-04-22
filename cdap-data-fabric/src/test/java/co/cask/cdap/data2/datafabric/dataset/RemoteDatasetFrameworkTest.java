@@ -42,11 +42,15 @@ import co.cask.cdap.data2.dataset2.SingleTypeModule;
 import co.cask.cdap.data2.dataset2.lib.table.CoreDatasetsModule;
 import co.cask.cdap.data2.dataset2.module.lib.inmemory.InMemoryTableModule;
 import co.cask.cdap.data2.metrics.DatasetMetricsReporter;
+import co.cask.cdap.data2.registry.UsageRegistry;
 import co.cask.cdap.explore.client.DiscoveryExploreClient;
 import co.cask.cdap.explore.client.ExploreFacade;
 import co.cask.cdap.gateway.auth.NoAuthenticator;
 import co.cask.cdap.proto.Id;
 import co.cask.http.HttpHandler;
+import co.cask.tephra.TransactionAware;
+import co.cask.tephra.TransactionExecutor;
+import co.cask.tephra.TransactionExecutorFactory;
 import co.cask.tephra.TransactionManager;
 import co.cask.tephra.inmemory.InMemoryTxSystemClient;
 import com.google.common.collect.ImmutableMap;
@@ -119,7 +123,16 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
       .putAll(DatasetMetaTableUtil.getModules())
       .build();
 
-    InMemoryDatasetFramework mdsFramework = new InMemoryDatasetFramework(registryFactory, modules, cConf);
+    TransactionExecutorFactory noOpTxExecutorFactory = new TransactionExecutorFactory() {
+      @Override
+      public TransactionExecutor createExecutor(Iterable<TransactionAware> txAwares) {
+        // NO-OP
+        return null;
+      }
+    };
+
+    InMemoryDatasetFramework mdsFramework = new InMemoryDatasetFramework(
+      registryFactory, modules, cConf, noOpTxExecutorFactory);
     MDSDatasetsRegistry mdsDatasetsRegistry = new MDSDatasetsRegistry(txSystemClient, mdsFramework);
 
     ExploreFacade exploreFacade = new ExploreFacade(new DiscoveryExploreClient(discoveryService), cConf);
@@ -135,7 +148,8 @@ public class RemoteDatasetFrameworkTest extends AbstractDatasetFrameworkTest {
                                  exploreFacade,
                                  new HashSet<DatasetMetricsReporter>(),
                                  new LocalUnderlyingSystemNamespaceAdmin(cConf, namespacedLocationFactory,
-                                                                         exploreFacade));
+                                                                         exploreFacade),
+                                 new UsageRegistry(noOpTxExecutorFactory, framework));
     // Start dataset service, wait for it to be discoverable
     service.start();
     final CountDownLatch startLatch = new CountDownLatch(1);

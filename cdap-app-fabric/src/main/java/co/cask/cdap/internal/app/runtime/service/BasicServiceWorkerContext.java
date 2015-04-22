@@ -162,7 +162,8 @@ public class BasicServiceWorkerContext extends AbstractContext implements Servic
     final TransactionContext context = new TransactionContext(transactionSystemClient);
     try {
       context.start();
-      runnable.run(new DynamicDatasetContext(Id.Namespace.from(program.getNamespaceId()), context, datasetFramework,
+      runnable.run(new DynamicDatasetContext(Id.Namespace.from(program.getNamespaceId()), program.getId(),
+                                             context, datasetFramework,
                                              getProgram().getClassLoader(), datasets, runtimeArgs) {
         @Override
         protected LoadingCache<Long, Map<DatasetCacheKey, Dataset>> getDatasetsCache() {
