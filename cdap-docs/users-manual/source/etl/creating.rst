@@ -4,73 +4,30 @@
 
 .. _users-custom-etl:
 
-===============================================
-Creating Custom ETL Applications and Components
-===============================================
+===========================
+Creating An ETL Application
+===========================
 
-
-ETL API
--------
-
-Manifest
---------
-
-JSON format
-...........
-
-
-
-
-Using Custom App-Template
--------------------------
-
-Java
-....
-CLI
-...
-REST API
-........
-Java Client API
-...............
-
-
-Creating Custom Transformations
-===============================
-Written in Javascript ?
-
-Creating a Plugin
------------------
-
-- Writing
-- Written in Java
-
-Accessing existing Servers and Sinks
-....................................
-
-
-Testing
-=======
-
-Test Framework (cdap-etl-test)
-------------------------------
-
-- For testing sources, sinks, transforms
-
-
-Packaging
-=========
-
-Packaging an App-Template
--------------------------
-
-Packaging an ETL Component
---------------------------
-
-
-Installation
+Introduction
 ============
 
-- Plugins Directory
-- Restart CDAP?
-- Updating?
+With UI
+=======
+- Start with an App-Template
+  - ETL-Batch
+  - ETL-Realtime
+- Set Source
+- Set Sink
+- Set Transformation(s), if any
 
+With CLI
+========
+??
+
+With RESTful API
+================
+??
+
+- With Java?
+- With Java Client?
+- With Other Clients: Javascript, Python, Ruby?

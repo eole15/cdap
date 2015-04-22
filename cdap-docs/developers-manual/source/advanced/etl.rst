@@ -8,10 +8,9 @@
 Creating Custom ETL Applications and Components
 ===============================================
 
-
 Overview
 ========
-
+- Purpose: For people writing new ETL Applications and ETL Components
 
 Components
 ==========
@@ -29,8 +28,8 @@ Transformations
 ---------------
 
 
-Creating a Custom App-Template
-==============================
+Creating Custom App-Templates
+=============================
 
 ETL API
 -------
@@ -42,56 +41,45 @@ JSON format
 ...........
 
 
-Using Custom App-Template
--------------------------
+Using Custom App-Templates
+==========================
 
 Java
-....
+----
 CLI
-...
-REST API
-........
+---
+RESTful API
+-----------
 Java Client API
-...............
+---------------
 
 
 Creating Custom Transformations
 ===============================
-Written in Javascript ?
+Written in Javascript?
 
-Creating a Plugin
------------------
 
-- Writing
+Creating Plugins
+=================
+
+Writing
+-------
 - Written in Java
-
-Accessing existing Servers and Sinks
-....................................
-
-
-Testing
-=======
-
-Test Framework (cdap-etl-test)
-------------------------------
-
-- For testing sources, sinks, transforms
-
+- Accessing existing Servers and Sinks
 
 Packaging
-=========
-
-Packaging an App-Template
--------------------------
-
-Packaging an ETL Component
---------------------------
-
+---------
+- Packaging an App-Template
+- Packaging an ETL Component
 
 Installation
-============
-
+------------
 - Plugins Directory
 - Restart CDAP?
 - Updating?
+
+Testing
+=======
+- Test Framework (cdap-etl-test)
+- For testing sources, sinks, transforms
 
