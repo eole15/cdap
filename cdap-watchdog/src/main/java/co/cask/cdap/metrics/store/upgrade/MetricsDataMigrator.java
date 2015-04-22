@@ -21,7 +21,7 @@ import co.cask.cdap.api.dataset.table.Row;
 import co.cask.cdap.api.dataset.table.Scanner;
 import co.cask.cdap.api.metrics.MetricStore;
 import co.cask.cdap.api.metrics.MetricType;
-import co.cask.cdap.api.metrics.MetricValue;
+import co.cask.cdap.api.metrics.MetricValues;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.data2.datafabric.DefaultDatasetNamespace;
@@ -82,7 +82,7 @@ public class MetricsDataMigrator {
       .put("u", ImmutableList.of(Constants.Metrics.Tag.APP,
                                  TYPE,
                                  Constants.Metrics.Tag.SERVICE,
-                                 Constants.Metrics.Tag.SERVICE_RUNNABLE,
+                                 Constants.Metrics.Tag.HANDLER,
                                  Constants.Metrics.Tag.INSTANCE_ID))
       .put("w", ImmutableList.of(Constants.Metrics.Tag.APP,
                                  TYPE,
@@ -406,7 +406,7 @@ public class MetricsDataMigrator {
   // constructs MetricValue based on parameters passed and adds the MetricValue to MetricStore.
   private void addMetricValueToMetricStore(Map<String, String> tags, String metricName,
                                            int timeStamp, long value, MetricType counter) throws Exception {
-    aggMetricStore.add(new MetricValue(tags, metricName, timeStamp, value, counter));
+    aggMetricStore.add(new MetricValues(tags, metricName, timeStamp, value, counter));
   }
 
   private MetricsTable getOrCreateMetricsTable(String tableName, DatasetProperties empty)
