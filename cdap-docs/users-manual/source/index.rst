@@ -17,9 +17,9 @@ CDAP Users’ Manual
 .. toctree::
    :maxdepth: 1
    
+    ETL Applications in CDAP <etl/index>
     Best Practices <best-practices>
     Adapters <adapters>
-    Creating Custom ETL Applications <etl>
     Application Logback <application-logback>
 
 
