@@ -9,29 +9,6 @@ Creating Custom ETL Applications and Components
 ===============================================
 
 
-Overview
-========
-
-
-Components
-==========
-
-Structured Records
-------------------
-
-Sinks
------
-
-Sources
--------
-
-Transformations
----------------
-
-
-Creating a Custom App-Template
-==============================
-
 ETL API
 -------
 
@@ -40,6 +17,8 @@ Manifest
 
 JSON format
 ...........
+
+
 
 
 Using Custom App-Template
