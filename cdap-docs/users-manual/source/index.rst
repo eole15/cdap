@@ -104,36 +104,3 @@ Operating An ETL Application (Users’ Manual)
 ** With CLI ??
 ** With RESTful API ??
       
-      
-Creating Custom ETL Applications and Components (Developers’ Manual)
-
-* Components
-** Structured Records
-** Sinks
-** Sources
-** Transformations
-* Creating a Custom App-Template
-** ETL API
-** Manifest
-*** JSON format
-** Using Custom App-Template
-*** Java
-*** CLI
-*** REST API
-*** Java Client API
-* Creating Custom Transforms
-** Written in Javascript ?
-* Creating a Plugin
-** Writing
-*** Written in Java
-*** Accessing existing Servers and Sinks
-** Packaging
-*** Packaging an App-Template
-*** Packaging an ETL Component
-** Installation
-*** Plugins Directory
-*** Restart CDAP?
-*** Updating?
-* Testing
-** Test Framework (cdap*etl*test)
-** For testing sources, sinks, transforms
