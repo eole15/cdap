@@ -18,21 +18,21 @@ Overview
 
 Purpose: Manual for people who are using CDAP.
 
-What is an ETL Application?
+What is an ETL Application? [Users’ Manual]
 
   Source -> [Transformation] -> Sink
   
   ETL "pipeline"
   One pipeline per Application
   
-Supported Use Cases
+Supported Use Cases [Users’ Manual]
 
   Batch
   
   Realtime
   
 
-ETL Application Components
+ETL Application Components [Users’ Manual]
 
   Sources
   
@@ -75,7 +75,7 @@ ETL Application Components
     Custom
       Uses Javascript
 
-Creating an ETL Application
+Creating an ETL Application [Users’ Manual]
 
   Created with:
     UI
@@ -87,6 +87,7 @@ Creating an ETL Application
   Steps
     UI
       Start with template
+      Using an Adaptor template
       Set Source
       Set Sink
       Set Transformation(s), if any
@@ -94,15 +95,28 @@ Creating an ETL Application
     CLI
       ??
 
-Adaptors
+Creating Custom ETL Components [Developers’ Manual?]
 
-  Creating a custom adaptor-template [where should this go?]
+  Components
+    Sinks
+    Sources
+    Transformations
+    Structured Records
+
+  Creating a Custom Adaptor-template
     CLI
     REST API
     Java Client API
     
-  Using an Adaptor template
+    Accessing existing Servers and Sinks
+    
+  Creating Custom Transforms
+    Written in Javascript
   
+  Creating a Plugin
+    Written in Java
+
+      
 
 
 
