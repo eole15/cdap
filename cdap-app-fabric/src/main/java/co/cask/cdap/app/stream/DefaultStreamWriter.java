@@ -73,7 +73,7 @@ public class DefaultStreamWriter implements StreamWriter {
     this.namespaceId = namespaceId;
     this.program = program;
     this.endpointStrategy = new RandomEndpointStrategy(discoveryServiceClient.discover(Constants.Service.STREAMS));
-    this.isStreamRegistered = Maps.newHashMap();
+    this.isStreamRegistered = Maps.newConcurrentMap();
     this.usageRegistry = usageRegistry;
   }
 

@@ -81,9 +81,6 @@ public class UsageHandlerTest extends AppFabricTestBase {
     Assert.assertEquals(0, getAppStreamUsage(app).size());
     Assert.assertEquals(0, getProgramStreamUsage(program).size());
     Assert.assertEquals(0, getStreamProgramUsage(stream).size());
-
-    Assert.assertEquals(0, getAppDatasetUsage(app).size());
-    Assert.assertEquals(0, getDatasetProgramUsage(dataset).size());
   }
 
   @Test
