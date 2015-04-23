@@ -5,6 +5,21 @@
 angular.module(PKG.name+'.feature.dashboard')
   .factory('Widget', function (MyDataSource, myHelpers) {
 
+//      function parseRefreshRate(val) {
+//        switch(val) {
+//          case '1 second':
+//            return 1000;
+//          case '5 seconds':
+//           return 1000 * 5;
+//          case '10 seconds':
+//           return 1000 * 10;
+//          case '60 seconds':
+//            return 1000 * 60;
+//          case '5 mins':
+//            return 1000 * 60 * 5;
+//        }
+//      }
+
     function Widget (opts) {
       opts = opts || {};
       this.title = opts.title || 'Widget';
@@ -17,6 +32,7 @@ angular.module(PKG.name+'.feature.dashboard')
       this.interval = opts.interval;
       this.aggregate = opts.aggregate;
       this.metricAlias =  opts.metricAlias || {};
+      this.pollId = undefined;
     }
 
     // 'ns.default.app.foo' -> {'ns': 'default', 'app': 'foo'}
@@ -59,8 +75,19 @@ angular.module(PKG.name+'.feature.dashboard')
         method: 'POST',
         body: constructQuery(queryId, contextToTags(this.metric.context), this.metric)
       })
-        .then(this.processData.bind(this))
+      .then(this.processData.bind(this));
+    };
+
+    Widget.prototype.reconfigure = function (scope) {
+      // stop any polling (if any was in session)
+      this.stopPolling();
+      if (this.isLive) {
+        this.startPolling(scope);
+      } else {
+        this.fetchData(scope);
+      }
     }
+
     Widget.prototype.startPolling = function (scope) {
       if (!this.dataSrc) {
         this.dataSrc = new MyDataSource(scope);
@@ -68,7 +95,11 @@ angular.module(PKG.name+'.feature.dashboard')
       if(!this.metric) {
         return;
       }
-      return this.dataSrc.poll(
+      if (this.pollId !== undefined) {
+        // already polling
+        return;
+      }
+      this.pollId = this.dataSrc.poll(
         {
           _cdapPath: '/metrics/query',
           method: 'POST',
@@ -79,19 +110,41 @@ angular.module(PKG.name+'.feature.dashboard')
       );
     };
 
-    Widget.prototype.stopPolling = function(id) {
+    Widget.prototype.stopPolling = function() {
       if (!this.dataSrc) return;
-      this.dataSrc.stopPoll(id);
+      if (this.pollId === undefined) {
+        // not currently polling
+        return;
+      }
+      this.dataSrc.stopPoll(this.pollId);
+      this.pollId = undefined;
     };
+
+    // Compute resolution since back-end doesn't provide us the resolution when 'auto' is used
+    var resolutionFromAuto = function(startTime, endTime) {
+      var diff = endTime - startTime;
+      if (diff <= 600) {
+        return '1s';
+      } else if (diff <= 36000) {
+        return '1m';
+      }
+      return '1h';
+    }
 
     var zeroFill = function(resolution, result) {
         // interpolating (filling with zeros) the data since backend returns only metrics at specific time periods
         // instead of for the whole range. We have to interpolate the rest with 0s to draw the graph.
+        if (resolution == 'auto') {
+          resolution = resolutionFromAuto(result.startTime, result.endTime);
+        }
         if (resolution == '1h') {
           skipAmt = 60 * 60;
         } else if (resolution == '1m') {
           skipAmt = 60;
+        } else if (resolution == '1s') {
+          skipAmt = 1;
         } else {
+          // backend defaults to '1s'
           skipAmt = 1;
         }
 
@@ -153,20 +206,10 @@ angular.module(PKG.name+'.feature.dashboard')
   })
 
   .controller('WidgetTimeseriesCtrl', function ($scope) {
-    var pollingId = null;
-    $scope.$watch('wdgt.isLive', function(newVal) {
-      if (!angular.isDefined(newVal)) {
-        return;
-      }
-      if (newVal) {
-        pollingId = $scope.wdgt.startPolling();
-      } else {
-        $scope.wdgt.stopPolling(pollingId);
-      }
-    });
-    $scope.wdgt.fetchData($scope);
+    $scope.wdgt.reconfigure($scope);
     $scope.chartHistory = null;
     $scope.stream = null;
+
     $scope.$watch('wdgt.data', function (newVal) {
       var metricMap, arr, vs, hist;
       if(angular.isObject(newVal)) {
@@ -213,19 +256,8 @@ angular.module(PKG.name+'.feature.dashboard')
   })
 
  .controller('C3WidgetTimeseriesCtrl', function ($scope) {
-    var pollingId = null;
-    $scope.$watch('wdgt.isLive', function(newVal) {
-      if (!angular.isDefined(newVal)) {
-        return;
-      }
-      if (newVal) {
-        pollingId = $scope.wdgt.startPolling();
-      } else {
-        $scope.wdgt.stopPolling(pollingId);
-      }
-    });
-    $scope.wdgt.fetchData($scope);
-    $scope.chartHistory = null;
+    $scope.chartData = null;
+    $scope.wdgt.reconfigure($scope);
     $scope.$watch('wdgt.data', function (newVal) {
       var metricMap, arr, columns, hist;
       if(angular.isObject(newVal) && newVal.length) {

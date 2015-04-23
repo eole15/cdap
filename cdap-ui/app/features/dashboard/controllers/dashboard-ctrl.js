@@ -9,7 +9,25 @@ function ($scope, $state, $dropdown, rDashboardsModel, MY_CONFIG) {
   $scope.isEnterprise = MY_CONFIG.isEnterprise;
   $scope.dashboards = rDashboardsModel.data || [];
   $scope.liveDashboard = null;
+  $scope.startMs = Date.now() - 60 * 1000;
+  $scope.endMs = Date.now();
+  $scope.durationMs = null;
   $scope.dashboards.activeIndex = parseInt($state.params.tab, 10) || 0;
+
+  // Available refresh rates.
+  $scope.refreshIntervals = [
+    '5 seconds',
+    '10 seconds',
+    '60 seconds',
+    '5 minutes',
+  ];
+  $scope.refreshIntervalsMap = {
+    '5 seconds' : 5 * 1000,
+    '10 seconds': 10 * 1000,
+    '60 seconds': 60 * 1000,
+    '5 minutes' : 300 * 1000,
+  }
+  $scope.refreshInterval = '5 seconds';
 
   $scope.currentBoard = rDashboardsModel.current();
   if (!$scope.currentBoard) {
@@ -78,16 +96,38 @@ function ($scope, $state, $dropdown, rDashboardsModel, MY_CONFIG) {
     }
   };
 
-  $scope.makeItLive = function() {
-    $scope.liveDashboard = !$scope.liveDashboard;
+
+  function applyOnWidgets(rDashboardsModel, func) {
     var currentColumns = rDashboardsModel.current().columns,
         i, j;
     for (i=0; i<currentColumns.length; i++) {
       for (j=0; j<currentColumns[i].length; j++) {
-        currentColumns[i][j].isLive = $scope.liveDashboard;
+        func(currentColumns[i][j]);
       }
     }
-  };
+  }
 
+  // TODO: new widgets added won't have the properties set below
 
+  $scope.updateWithTimeRange = function() {
+    // TODO: need to restrict timeRange (too wide a time range causes issues with charting lib - too many points!)
+    applyOnWidgets(rDashboardsModel, function (widget) {
+      widget.metric.startTime = Math.floor($scope.startMs / 1000);
+      widget.metric.endTime = Math.floor($scope.endMs / 1000);
+      widget.metric.resolution = 'auto';
+      widget.isLive = false;
+      widget.reconfigure();
+    });
+  }
+
+  $scope.updateWithFrequency = function() {
+    applyOnWidgets(rDashboardsModel, function (widget) {
+      widget.metric.startTime = $scope.durationMs;
+      widget.metric.endTime = 'now';
+      widget.metric.resolution = 'auto';
+      widget.isLive = true;
+      widget.interval = $scope.refreshIntervalsMap[$scope.refreshInterval];
+      widget.reconfigure();
+    });
+  }
 });

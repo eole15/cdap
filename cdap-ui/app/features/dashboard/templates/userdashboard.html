@@ -5,6 +5,42 @@
 <div class="well well-lg" ng-if="currentBoard.isEmpty">
   <h3 class="text-center"> No widgets on this board! <a ui-sref="dashboard.user.addwdgt"> Add one! </a>  </h3>
 </div>
+<div class="row">
+
+  <div class="col-xs-3">
+    <my-timestamp-picker
+      data-label="From"
+      ng-model="startMs"
+    ></my-timestamp-picker>
+  </div>
+
+  <div class="col-xs-3">
+    <my-timestamp-picker
+      data-label="To"
+      ng-model="endMs"
+    ></my-timestamp-picker>
+    <button ng-click="updateWithTimeRange()">Apply!</button>
+  </div>
+
+  <div class="col-xs-1">
+    <my-duration-picker
+      ng-model="durationMs">
+    </my-duration-picker>
+  </div>
+
+
+  <div class="col-xs-2">
+    <button type="button" class="btn btn-default form-control mp-dropdown-toggle"
+    ng-model="refreshInterval"
+    bs-options="t for t in refreshIntervals"
+    bs-select>
+      <strong ng-bind="refreshInterval"></strong>
+      <span class="caret"></span>
+    </button>
+  </div>
+  <button ng-click="updateWithFrequency()">Apply!</button>
+
+</div>
 
 <div class="row" ng-controller="WidgetColCtrl" ng-if="!unknownBoard">
   <div ng-class="{ 'col-xs-12': colWidth.fullWidth, 'col-xs-12 col-md-6': colWidth.oneThird }"
