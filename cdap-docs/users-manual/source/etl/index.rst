@@ -2,7 +2,7 @@
     :author: Cask Data, Inc.
     :copyright: Copyright © 2015 Cask Data, Inc.
 
-.. _users-custom-etl:
+.. _users-etl-index:
 
 ===============================================
 ETL Applications in CDAP
