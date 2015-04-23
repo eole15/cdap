@@ -33,6 +33,7 @@ import co.cask.cdap.common.exception.CannotBeDeletedException;
 import co.cask.cdap.common.exception.NotFoundException;
 import co.cask.cdap.common.exception.ProgramNotFoundException;
 import co.cask.cdap.common.namespace.NamespacedLocationFactory;
+import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.internal.app.ApplicationSpecificationAdapter;
 import co.cask.cdap.internal.app.deploy.InMemoryConfigurator;
 import co.cask.cdap.internal.app.deploy.ProgramTerminator;
@@ -70,7 +71,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import org.apache.commons.io.FileUtils;
 import org.apache.twill.api.RunId;
 import org.apache.twill.common.Threads;
 import org.apache.twill.filesystem.LocalLocationFactory;
@@ -106,6 +106,8 @@ public class AdapterService extends AbstractIdleService {
   private final Store store;
   private final PropertiesResolver resolver;
   private final NamespacedLocationFactory namespacedLocationFactory;
+  private final PluginRepository pluginRepository;
+
   // template name to template info mapping
   private final AtomicReference<Map<String, ApplicationTemplateInfo>> appTemplateInfos;
   // jar file name to template info mapping
@@ -118,7 +120,8 @@ public class AdapterService extends AbstractIdleService {
                         @Named("adapters")
                         ManagerFactory<AdapterDeploymentInfo, AdapterSpecification> adapterManagerFactory,
                         NamespacedLocationFactory namespacedLocationFactory, ProgramLifecycleService lifecycleService,
-                        PropertiesResolver resolver) {
+                        PropertiesResolver resolver,
+                        PluginRepository pluginRepository) {
     this.configuration = configuration;
     this.scheduler = scheduler;
     this.lifecycleService = lifecycleService;
@@ -126,11 +129,14 @@ public class AdapterService extends AbstractIdleService {
     this.store = store;
     this.templateManagerFactory = templateManagerFactory;
     this.adapterManagerFactory = adapterManagerFactory;
+
     this.appTemplateInfos = new AtomicReference<Map<String, ApplicationTemplateInfo>>(
       new HashMap<String, ApplicationTemplateInfo>());
     this.fileToTemplateMap = new AtomicReference<Map<File, ApplicationTemplateInfo>>(
       new HashMap<File, ApplicationTemplateInfo>());
     this.resolver = resolver;
+
+    this.pluginRepository = pluginRepository;
   }
 
   @Override
@@ -435,7 +441,10 @@ public class AdapterService extends AbstractIdleService {
     Id.Program workflowId = getProgramId(namespace, adapterSpec);
     ScheduleSpecification scheduleSpec = adapterSpec.getScheduleSpec();
     scheduler.schedule(workflowId, scheduleSpec.getProgram().getProgramType(), scheduleSpec.getSchedule(),
-      ImmutableMap.of(ProgramOptionConstants.ADAPTER_NAME, adapterSpec.getName()));
+                       ImmutableMap.of(
+                         ProgramOptionConstants.ADAPTER_NAME, adapterSpec.getName(),
+                         ProgramOptionConstants.ADAPTER_SPEC, GSON.toJson(adapterSpec)
+                       ));
     //TODO: Scheduler API should also manage the MDS.
     store.addSchedule(workflowId, scheduleSpec);
   }
@@ -473,6 +482,7 @@ public class AdapterService extends AbstractIdleService {
 
       // Pass Adapter Name as a system property
       sysArgs.put(ProgramOptionConstants.ADAPTER_NAME, adapterSpec.getName());
+      sysArgs.put(ProgramOptionConstants.ADAPTER_SPEC, GSON.toJson(adapterSpec));
       sysArgs.put(ProgramOptionConstants.INSTANCES, String.valueOf(adapterSpec.getInstances()));
       sysArgs.put(ProgramOptionConstants.RESOURCES, GSON.toJson(adapterSpec.getResources()));
 
@@ -610,7 +620,7 @@ public class AdapterService extends AbstractIdleService {
       Map<File, ApplicationTemplateInfo> newFileTemplateMap = Maps.newHashMap();
 
       File baseDir = new File(configuration.get(Constants.AppFabric.APP_TEMPLATE_DIR));
-      Collection<File> files = FileUtils.listFiles(baseDir, new String[]{"jar"}, true);
+      List<File> files = DirUtils.listFiles(baseDir, "jar");
       for (File file : files) {
         try {
           ApplicationTemplateInfo info = getTemplateInfo(file);
@@ -622,6 +632,10 @@ public class AdapterService extends AbstractIdleService {
       }
       appTemplateInfos.set(newInfoMap);
       fileToTemplateMap.set(newFileTemplateMap);
+
+      // Always update all plugins for all template.
+      // TODO: Performance improvement to only rebuild plugin information for those that changed
+      pluginRepository.inspectPlugins(newInfoMap.values());
     } catch (Exception e) {
       LOG.warn("Unable to read the plugins directory");
     }
