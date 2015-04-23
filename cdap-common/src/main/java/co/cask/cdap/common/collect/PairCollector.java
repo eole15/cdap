@@ -30,14 +30,7 @@ import java.util.Map;
  * @param <KEY> Type of key.
  * @param <VALUE> Type of value.
  */
-public interface PairCollector<KEY, VALUE> {
-  /**
-   * Collect one entry.
-   *
-   * @param entries the entries to collect
-   * @return whether more elements need to be collected
-   */
-  boolean addEntries(Iterable<Map.Entry<KEY, VALUE>> entries);
+public interface PairCollector<KEY, VALUE> extends Collector<Map.Entry<KEY, VALUE>> {
 
   /**
    * Finish collection of elements and add all collected elements into the given {@link Multimap}.
@@ -46,5 +39,5 @@ public interface PairCollector<KEY, VALUE> {
    * @param <T> Type of collection
    * @return The same {@link Multimap} instance given in the parameter.
    */
-  <T extends Multimap<? super KEY, ? super VALUE>> T finish(T map);
+  <T extends Multimap<? super KEY, ? super VALUE>> T finishMultimap(T map);
 }

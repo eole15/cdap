@@ -23,7 +23,6 @@ import co.cask.cdap.common.guice.LocationRuntimeModule;
 import co.cask.cdap.common.guice.ZKClientModule;
 import co.cask.cdap.common.queue.QueueName;
 import co.cask.cdap.data.runtime.DataSetsModules;
-import co.cask.cdap.data.runtime.ThriftClientProviderSupplier;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.ConsumerGroupConfig;
 import co.cask.cdap.data2.queue.QueueClientFactory;
@@ -36,8 +35,8 @@ import co.cask.cdap.data2.util.TableId;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtil;
 import co.cask.cdap.data2.util.hbase.HBaseTableUtilFactory;
 import co.cask.tephra.Transaction;
-import co.cask.tephra.distributed.ThriftClientProvider;
 import co.cask.tephra.distributed.TransactionServiceClient;
+import co.cask.tephra.runtime.TransactionClientModule;
 import co.cask.tephra.runtime.TransactionModules;
 import com.google.common.base.Function;
 import com.google.common.collect.Multimap;
@@ -283,10 +282,10 @@ public class HBaseQueueDebugger extends AbstractIdleService {
     Injector injector = Guice.createInjector(
       new ConfigModule(),
       new ZKClientModule(),
+      new TransactionClientModule(),
       new AbstractModule() {
         @Override
         protected void configure() {
-          bind(ThriftClientProvider.class).toProvider(ThriftClientProviderSupplier.class);
           bind(QueueClientFactory.class).to(HBaseQueueClientFactory.class).in(Singleton.class);
           bind(QueueAdmin.class).to(HBaseQueueAdmin.class).in(Singleton.class);
           bind(HBaseTableUtil.class).toProvider(HBaseTableUtilFactory.class);

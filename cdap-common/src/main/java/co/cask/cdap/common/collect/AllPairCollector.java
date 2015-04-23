@@ -19,11 +19,11 @@ package co.cask.cdap.common.collect;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
- * This collector will collect until it runs out of memory, it
- * never returns false.
+ * This collector will collect every entry.
  *
  * @param <KEY> Type of key
  * @param <VALUE> Type of value
@@ -32,19 +32,23 @@ public class AllPairCollector<KEY, VALUE> implements PairCollector<KEY, VALUE> {
 
   private final Multimap<KEY, VALUE> elements = HashMultimap.create();
 
-
   @Override
-  public boolean addEntries(Iterable<Map.Entry<KEY, VALUE>> entries) {
-    for (Map.Entry<KEY, VALUE> entry : entries) {
-      elements.put(entry.getKey(), entry.getValue());
-    }
+  public boolean addElement(Map.Entry<KEY, VALUE> entry) {
+    elements.put(entry.getKey(), entry.getValue());
     return true;
   }
 
   @Override
-  public <T extends Multimap<? super KEY, ? super VALUE>> T finish(T map) {
+  public <T extends Multimap<? super KEY, ? super VALUE>> T finishMultimap(T map) {
     map.putAll(elements);
     elements.clear();
     return map;
+  }
+
+  @Override
+  public <T extends Collection<? super Map.Entry<KEY, VALUE>>> T finish(T collection) {
+    collection.addAll(elements.entries());
+    elements.clear();
+    return collection;
   }
 }

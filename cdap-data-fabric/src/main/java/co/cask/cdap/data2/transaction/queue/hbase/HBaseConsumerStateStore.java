@@ -333,7 +333,8 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
    * the barrier changes.
    */
   Multimap<Long, QueueBarrier> getAllBarriers() {
-    return scanBarriers(new AllPairCollector<Long, QueueBarrier>()).finish(HashMultimap.<Long, QueueBarrier>create());
+    return scanBarriers(new AllPairCollector<Long, QueueBarrier>()).finishMultimap(
+      HashMultimap.<Long, QueueBarrier>create());
   }
 
   void getLatestConsumerGroups(Collection<? super ConsumerGroupConfig> result) {
@@ -365,8 +366,12 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
       Row row;
       while ((row = scanner.next()) != null) {
         Map<Long, QueueBarrier> info = decodeBarrierInfo(row);
-        if (info != null && !collector.addEntries(info.entrySet())) {
-          break;
+        if (info != null) {
+          for (Map.Entry<Long, QueueBarrier> entry : info.entrySet()) {
+            if (!collector.addElement(entry)) {
+              return collector;
+            }
+          }
         }
       }
     } finally {
