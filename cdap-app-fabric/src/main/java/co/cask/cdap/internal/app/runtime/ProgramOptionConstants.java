@@ -23,6 +23,8 @@ public final class ProgramOptionConstants {
 
   public static final String RUN_ID = "runId";
 
+  public static final String TWILL_RUN_ID = "twillRunId";
+
   public static final String INSTANCE_ID = "instanceId";
 
   public static final String INSTANCES = "instances";
@@ -50,6 +52,8 @@ public final class ProgramOptionConstants {
   public static final String RUN_BASE_COUNT_TIME = "runBaseCountTime";
 
   public static final String ADAPTER_NAME = "adapterName";
+
+  public static final String ADAPTER_SPEC = "adapterSpec";
 
   public static final String RESOURCES = "resources";
 }

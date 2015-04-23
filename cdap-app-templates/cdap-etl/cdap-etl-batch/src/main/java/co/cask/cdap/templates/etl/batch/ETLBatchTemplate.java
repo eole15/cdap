@@ -21,55 +21,24 @@ import co.cask.cdap.api.app.ApplicationContext;
 import co.cask.cdap.api.templates.AdapterConfigurer;
 import co.cask.cdap.internal.schedule.TimeSchedule;
 import co.cask.cdap.templates.etl.batch.config.ETLBatchConfig;
-import co.cask.cdap.templates.etl.batch.sinks.BatchWritableSink;
-import co.cask.cdap.templates.etl.batch.sinks.CubeSink;
-import co.cask.cdap.templates.etl.batch.sinks.DBSink;
-import co.cask.cdap.templates.etl.batch.sinks.KVTableSink;
-import co.cask.cdap.templates.etl.batch.sinks.TableSink;
-import co.cask.cdap.templates.etl.batch.sinks.TimePartitionedFileSetDatasetAvroSink;
-import co.cask.cdap.templates.etl.batch.sources.BatchReadableSource;
-import co.cask.cdap.templates.etl.batch.sources.DBSource;
-import co.cask.cdap.templates.etl.batch.sources.KVTableSource;
-import co.cask.cdap.templates.etl.batch.sources.StreamBatchSource;
-import co.cask.cdap.templates.etl.batch.sources.TableSource;
 import co.cask.cdap.templates.etl.common.Constants;
 import co.cask.cdap.templates.etl.common.ETLTemplate;
-import co.cask.cdap.templates.etl.transforms.IdentityTransform;
-import co.cask.cdap.templates.etl.transforms.ProjectionTransform;
-import co.cask.cdap.templates.etl.transforms.ScriptFilterTransform;
-import co.cask.cdap.templates.etl.transforms.StructuredRecordToGenericRecordTransform;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * ETL Batch Template.
  */
 public class ETLBatchTemplate extends ETLTemplate<ETLBatchConfig> {
+  private static final Logger LOG = LoggerFactory.getLogger(ETLBatchTemplate.class);
   private static final Gson GSON = new Gson();
-
-  public ETLBatchTemplate() throws Exception {
-    super();
-
-    // Add classes from Lib here to be available for use in the ETL Adapter.
-    // TODO: Remove this when plugins management is available.
-    initTable(Lists.<Class>newArrayList(KVTableSource.class,
-                                        KVTableSink.class,
-                                        BatchReadableSource.class,
-                                        BatchWritableSink.class,
-                                        TableSource.class,
-                                        TableSink.class,
-                                        IdentityTransform.class,
-                                        StructuredRecordToGenericRecordTransform.class,
-                                        StreamBatchSource.class,
-                                        TimePartitionedFileSetDatasetAvroSink.class,
-                                        ScriptFilterTransform.class,
-                                        ProjectionTransform.class,
-                                        DBSource.class,
-                                        DBSink.class,
-                                        CubeSink.class));
-  }
 
   @Override
   public void configureAdapter(String adapterName, ETLBatchConfig etlBatchConfig,
@@ -86,7 +55,7 @@ public class ETLBatchTemplate extends ETLTemplate<ETLBatchConfig> {
 
   @Override
   public void configure(ApplicationConfigurer configurer, ApplicationContext context) {
-    configurer.setName("etlbatch");
+    configurer.setName(getAppName("etl.batch.plugin.name"));
     configurer.setDescription("Batch Extract-Transform-Load (ETL) Adapter");
     configurer.addMapReduce(new ETLMapReduce());
     configurer.addWorkflow(new ETLWorkflow());

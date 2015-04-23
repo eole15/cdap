@@ -103,12 +103,13 @@ public class StreamBatchSource extends BatchSource<LongWritable, Object, Structu
 
   @Override
   public void configurePipeline(ETLStage stageConfig, PipelineConfigurer pipelineConfigurer) {
-    new Config(stageConfig.getProperties());
+    Config config = new Config(stageConfig.getProperties());
+    pipelineConfigurer.addStream(new Stream(config.name));
   }
 
   @Override
   public void prepareJob(BatchSourceContext context) {
-    config = new Config(context.getRuntimeArguments());
+    config = new Config(context.getPluginProperties().getProperties());
 
     long endTime = context.getLogicalStartTime() - config.delay;
     long startTime = endTime - config.duration;

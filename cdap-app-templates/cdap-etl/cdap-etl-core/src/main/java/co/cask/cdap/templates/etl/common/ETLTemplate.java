@@ -19,33 +19,32 @@ package co.cask.cdap.templates.etl.common;
 import co.cask.cdap.api.Resources;
 import co.cask.cdap.api.templates.AdapterConfigurer;
 import co.cask.cdap.api.templates.ApplicationTemplate;
+import co.cask.cdap.api.templates.plugins.PluginProperties;
 import co.cask.cdap.templates.etl.api.EndPointStage;
 import co.cask.cdap.templates.etl.api.PipelineConfigurer;
-import co.cask.cdap.templates.etl.api.StageSpecification;
 import co.cask.cdap.templates.etl.api.Transform;
 import co.cask.cdap.templates.etl.api.TransformStage;
-import co.cask.cdap.templates.etl.api.batch.BatchSink;
-import co.cask.cdap.templates.etl.api.batch.BatchSource;
 import co.cask.cdap.templates.etl.api.config.ETLStage;
 import co.cask.cdap.templates.etl.api.realtime.RealtimeSink;
 import co.cask.cdap.templates.etl.api.realtime.RealtimeSource;
+import co.cask.cdap.templates.etl.common.guice.TypeResolver;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.reflect.TypeResolution;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 
 /**
  * Base ETL Template.
@@ -56,64 +55,10 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
   private static final Logger LOG = LoggerFactory.getLogger(ETLTemplate.class);
   private static final Gson GSON = new Gson();
 
-  private final Map<String, String> sourceClassMap;
-  private final Map<String, String> sinkClassMap;
-  private final Map<String, String> transformClassMap;
-
-  private Class<?> sourceClass;
-  private Class<?> sinkClass;
-  private List<Class<?>> transformClasses;
-
-  protected EndPointStage source;
-  protected EndPointStage sink;
-  protected List<TransformStage> transforms;
-
-  public ETLTemplate() {
-    sourceClassMap = Maps.newHashMap();
-    sinkClassMap = Maps.newHashMap();
-    transformClassMap = Maps.newHashMap();
-    transforms = Lists.newArrayList();
-    transformClasses = Lists.newArrayList();
-  }
-
-  protected void initTable(List<Class> classList) throws Exception {
-    for (Class klass : classList) {
-      DefaultStageConfigurer configurer = new DefaultStageConfigurer(klass);
-      if (RealtimeSource.class.isAssignableFrom(klass) || BatchSource.class.isAssignableFrom(klass)) {
-        EndPointStage source = (EndPointStage) klass.newInstance();
-        source.configure(configurer);
-        sourceClassMap.put(configurer.createSpecification().getName(), configurer.createSpecification().getClassName());
-      } else if (RealtimeSink.class.isAssignableFrom(klass) || BatchSink.class.isAssignableFrom(klass)) {
-        EndPointStage sink = (EndPointStage) klass.newInstance();
-        sink.configure(configurer);
-        sinkClassMap.put(configurer.createSpecification().getName(), configurer.createSpecification().getClassName());
-      } else {
-        Preconditions.checkArgument(TransformStage.class.isAssignableFrom(klass));
-        TransformStage transform = (TransformStage) klass.newInstance();
-        transform.configure(configurer);
-        transformClassMap.put(configurer.createSpecification().getName(),
-                              configurer.createSpecification().getClassName());
-      }
-    }
-  }
-
-  protected void configure(EndPointStage stage, ETLStage stageConfig, AdapterConfigurer configurer,
-                               String specKey) throws Exception {
-    PipelineConfigurer pipelineConfigurer = new DefaultPipelineConfigurer(configurer);
+  protected void configure(EndPointStage stage, ETLStage stageConfig, AdapterConfigurer configurer, String pluginPrefix)
+    throws Exception {
+    PipelineConfigurer pipelineConfigurer = new DefaultPipelineConfigurer(configurer, pluginPrefix);
     stage.configurePipeline(stageConfig, pipelineConfigurer);
-    DefaultStageConfigurer defaultStageConfigurer = new DefaultStageConfigurer(stage.getClass());
-    StageSpecification specification = defaultStageConfigurer.createSpecification();
-    configurer.addRuntimeArgument(specKey, GSON.toJson(specification));
-  }
-
-  protected void configureTransforms(List<TransformStage> transformList, AdapterConfigurer configurer, String specKey) {
-    List<StageSpecification> transformSpecs = Lists.newArrayList();
-    for (Transform transformObj : transformList) {
-      DefaultStageConfigurer stageConfigurer = new DefaultStageConfigurer(transformObj.getClass());
-      StageSpecification specification = stageConfigurer.createSpecification();
-      transformSpecs.add(specification);
-    }
-    configurer.addRuntimeArgument(specKey, GSON.toJson(transformSpecs));
   }
 
   @Override
@@ -122,41 +67,58 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
     ETLStage sourceConfig = etlConfig.getSource();
     ETLStage sinkConfig = etlConfig.getSink();
     List<ETLStage> transformConfigs = etlConfig.getTransforms();
-
-    // Get Source, Sink, Transform Class Names
-    String sourceClassName = sourceClassMap.get(sourceConfig.getName());
-    String sinkClassName = sinkClassMap.get(sinkConfig.getName());
-    if (sourceClassName == null) {
-      throw new IllegalArgumentException(String.format("No source named %s found.", sourceConfig.getName()));
-    }
-    if (sinkClassName == null) {
-      throw new IllegalArgumentException(String.format("No sink named %s found.", sinkConfig.getName()));
-    }
-
-    List<String> transformClassNames = Lists.newArrayList();
-    for (ETLStage transformStage : transformConfigs) {
-      String transformName = transformClassMap.get(transformStage.getName());
-      transformClassNames.add(transformName);
-      if (transformName == null) {
-        throw new IllegalArgumentException(String.format("No transform named %s found.", transformStage.getName()));
-      }
-    }
-
-    // Validate Source -> Transform -> Sink hookup
-    validateStages(sourceClassName, sinkClassName, transformClassNames);
+    String sourcePluginId = sourceConfig.getName();
+    String sinkPluginId = sinkConfig.getName();
 
     // Instantiate Source, Transforms, Sink stages.
-    source = instantiateClass(sourceClass);
-    sink = instantiateClass(sinkClass);
-    for (Class transformClass : transformClasses) {
-      TransformStage transformObj = instantiateClass(transformClass);
+    // Use the plugin name as the plugin id for source and sink stages since there can be only one source and one sink.
+    EndPointStage source = configurer.usePlugin(
+      Constants.Source.PLUGINTYPE, sourceConfig.getName(), sourcePluginId,
+      PluginProperties.builder().addAll(sourceConfig.getProperties()).build());
+    if (source == null) {
+      throw new IllegalArgumentException(String.format("No Plugins of type %s named %s was found",
+                                                       Constants.Source.PLUGINTYPE, sourceConfig.getName()));
+    }
+
+    EndPointStage sink = configurer.usePlugin(
+      Constants.Sink.PLUGINTYPE, sinkConfig.getName(), sinkPluginId,
+      PluginProperties.builder().addAll(sinkConfig.getProperties()).build());
+    if (sink == null) {
+      throw new IllegalArgumentException(String.format("No Plugins of type %s named %s was found",
+                                                       Constants.Sink.PLUGINTYPE, sinkConfig.getName()));
+    }
+
+    // Store transform id list to be serialized and passed to the driver program
+    List<String> transformIds = Lists.newArrayListWithCapacity(transformConfigs.size());
+    List<Transform> transforms = Lists.newArrayListWithCapacity(transformConfigs.size());
+    for (int i = 0; i < transformConfigs.size(); i++) {
+      ETLStage transformConfig = transformConfigs.get(i);
+
+      // Generate a transformId based on transform name and the array index (since there could
+      // multiple transforms - ex, N filter transforms in the same pipeline)
+      String transformId = String.format("%s%s%d", transformConfig.getName(), Constants.ID_SEPARATOR, i);
+      TransformStage transformObj = configurer.usePlugin(
+        Constants.Transform.PLUGINTYPE, transformConfig.getName(), transformId,
+        PluginProperties.builder().addAll(transformConfig.getProperties()).build());
+      if (transformObj == null) {
+        throw new IllegalArgumentException(String.format("No Plugins of type %s named %s was found",
+                                                         Constants.Transform.PLUGINTYPE, transformConfig.getName()));
+      }
+
+      transformIds.add(transformId);
       transforms.add(transformObj);
     }
 
-    configure(source, sourceConfig, configurer, Constants.Source.SPECIFICATION);
-    configure(sink, sinkConfig, configurer, Constants.Sink.SPECIFICATION);
-    configureTransforms(transforms, configurer, Constants.Transform.SPECIFICATIONS);
+    // Validate Source -> Transform -> Sink hookup
+    validateStages(source, sink, transforms);
+
+    configure(source, sourceConfig, configurer, Constants.Source.PLUGINID);
+    configure(sink, sinkConfig, configurer, Constants.Sink.PLUGINID);
+
     configurer.addRuntimeArgument(Constants.ADAPTER_NAME, adapterName);
+    configurer.addRuntimeArgument(Constants.Source.PLUGINID, sourcePluginId);
+    configurer.addRuntimeArgument(Constants.Sink.PLUGINID, sinkPluginId);
+    configurer.addRuntimeArgument(Constants.Transform.PLUGINIDS, GSON.toJson(transformIds));
 
     Resources resources = etlConfig.getResources();
     if (resources != null) {
@@ -164,14 +126,33 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
     }
   }
 
-  private void validateStages(String source, String sink, List<String> transforms) throws Exception {
+  protected String getAppName(String key) {
+    Properties prop = new Properties();
+    InputStream input = getClass().getResourceAsStream("/etl.properties");
+    try {
+      prop.load(input);
+      return prop.getProperty(key);
+    } catch (IOException e) {
+      LOG.warn("ETL properties not read: {}", e.getMessage(), e);
+      throw Throwables.propagate(e);
+    } finally {
+      try {
+        input.close();
+      } catch (Exception e) {
+        LOG.warn("ETL properties not read: {}", e.getMessage(), e);
+        throw Throwables.propagate(e);
+      }
+    }
+  }
+
+  private void validateStages(EndPointStage source, EndPointStage sink, List<Transform> transforms) throws Exception {
     ArrayList<Type> unresTypeList = Lists.newArrayListWithCapacity(transforms.size() + 2);
     Type inType = Transform.class.getTypeParameters()[0];
     Type outType = Transform.class.getTypeParameters()[1];
 
     // Load the classes using the class names provided
-    sourceClass = Class.forName(source);
-    sinkClass = Class.forName(sink);
+    Class<?> sourceClass = source.getClass();
+    Class<?> sinkClass = sink.getClass();
     TypeToken sourceToken = TypeToken.of(sourceClass);
     TypeToken sinkToken = TypeToken.of(sinkClass);
 
@@ -184,9 +165,8 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
     }
 
     // Extract the transforms' input and output type
-    for (String transform : transforms) {
-      Class<?> klass = Class.forName(transform);
-      transformClasses.add(klass);
+    for (Transform transform : transforms) {
+      Class<?> klass = transform.getClass();
       TypeToken transformToken = TypeToken.of(klass);
       unresTypeList.add(transformToken.resolveType(inType).getType());
       unresTypeList.add(transformToken.resolveType(outType).getType());
@@ -220,7 +200,7 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
     resTypeList.add(unresTypeList.get(0));
     try {
       // Resolve the second type using just the first resolved type.
-      Type nType = (new TypeResolution()).where(unresTypeList.get(1), resTypeList.get(0)).resolveType(
+      Type nType = (new TypeResolver()).where(unresTypeList.get(1), resTypeList.get(0)).resolveType(
         unresTypeList.get(1));
       resTypeList.add(nType);
     } catch (IllegalArgumentException e) {
@@ -242,9 +222,9 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
         // Ex: Actual = List<String> ; Formal = List<T> ; ToResolve = T ==> newType = String which is not correct;
         // newType should be List<String>. Hence resolve only from the previous resolved type (Actual)
         if ((toResolveType instanceof TypeVariable) || (toResolveType instanceof GenericArrayType)) {
-          newType = (new TypeResolution()).where(toResolveType, actualType).resolveType(toResolveType);
+          newType = (new TypeResolver()).where(toResolveType, actualType).resolveType(toResolveType);
         } else {
-          newType = (new TypeResolution()).where(formalType, actualType).resolveType(toResolveType);
+          newType = (new TypeResolver()).where(formalType, actualType).resolveType(toResolveType);
         }
         resTypeList.add(newType);
       } catch (IllegalArgumentException e) {
@@ -262,19 +242,6 @@ public abstract class ETLTemplate<T> extends ApplicationTemplate<T> {
       Preconditions.checkArgument(TypeToken.of(secondType).isAssignableFrom(firstType),
                                   "Types between stages didn't match. Mismatch between {} -> {}",
                                   firstType, secondType);
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T> T instantiateClass(Class klass) {
-    try {
-      return (T) klass.newInstance();
-    } catch (InstantiationException e) {
-      LOG.error("Unable to instantiate {}", klass.getName(), e);
-      throw Throwables.propagate(e);
-    } catch (IllegalAccessException e) {
-      LOG.error("Illegal access while instantiating {}", klass.getName(), e);
-      throw Throwables.propagate(e);
     }
   }
 }

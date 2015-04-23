@@ -5,7 +5,7 @@ var baseDirective = {
   replace: true,
   template: '<div class="c3"></div>',
   scope: {
-    history: '='
+    chartData: '='
   },
   controller: 'c3Controller'
 };
@@ -47,40 +47,13 @@ ngC3.controller('c3Controller', function ($scope, caskWindowManager, c3, myHelpe
     $scope.options = options;
 
 
-    if(attr.history) {
-      $scope.$watch('history', function (newVal) {
-        if(newVal && newVal.length) {
-          // format Data as acceptable by c3.
-          // TODO: if we get rid of epoch, we can more easily change the format of 'history',
-          // to avoid an intermediary data format
-          var columns = [];
-          var metricNames = [];
-          // Iterate over the different metrics in each chart
-          for (var i = 0; i < newVal.length; i++) {
-            var thisMetric = newVal[i];
-            var thisData = [];
-            thisData.push(thisMetric.label);
-            metricNames.push(thisMetric.label);
-            // For each metric, iterate over all the time values, to construct an array in the format:
-            // [metricName, v1, v2, v3]
-            for (var j = 0; j < thisMetric.values.length; j++) {
-              thisData.push(thisMetric.values[j].y);
-            }
-            columns.push(thisData);
-          }
-          // Need to construct an array in the format: ['x', ts1, ts2, ts3],
-          // so extract the timestamp values from the first metric's timeseries.
-          var xValues = ['x'];
-          for (var i = 0; i < newVal[0].values.length; i++) {
-            xValues.push(newVal[0].values[i].time);
-          }
-          columns.push(xValues);
-
-
-          myData = { x: 'x', columns: columns, keys: {x: 'x'} };
+    if(attr.chartData) {
+      $scope.$watch('chartData', function (chartData) {
+        if(chartData) {
+          myData = { x: 'x', columns: chartData.columns, keys: {x: 'x'} };
 
           if ($scope.options.stack) {
-            myData.groups = [metricNames];
+            myData.groups = [chartData.metricNames];
           }
 
           // Save the data for when it gets resized.
@@ -100,21 +73,16 @@ ngC3.controller('c3Controller', function ($scope, caskWindowManager, c3, myHelpe
     data.type = $scope.type;
 
     // Mainly needed for pie chart values to be shown upon tooltip, but also useful for other types.
-    var myTooltip = {
-      format: {
-        value: function (value, ratio, id) {
-          return d3.format(',')(value);
-        }
-      }
-    }
+    var myTooltip = { format: { value: d3.format(',') } };
 
     var chartConfig = {bindto: $scope.options.el, data: data, tooltip: myTooltip};
     chartConfig.size = $scope.options.size;
 
     var xTick = {};
+    xTick.count = $scope.options.xtickcount
     if ($scope.options.formatAsTimestamp) {
-      var timestampFormat = function(timestamp) {
-        return $filter('amDateFormat')(timestamp, 'h:mm:ss a');
+      var timestampFormat = function(timestampSeconds) {
+        return $filter('amDateFormat')(timestampSeconds * 1000, 'h:mm:ss a');
       };
       xTick.format = timestampFormat;
     }
@@ -124,6 +92,13 @@ ngC3.controller('c3Controller', function ($scope, caskWindowManager, c3, myHelpe
     chartConfig.color = $scope.options.color;
     chartConfig.legend = $scope.options.legend;
     chartConfig.point = { show: false };
+    if($scope.options.subchart) {
+      chartConfig.subchart = $scope.options.subchart;
+    }
+    chartConfig.zoom = { enabled: true};
+    chartConfig.transition = {
+                        duration: 1000
+                    }
     $scope.me = c3.generate(chartConfig);
   }
 
@@ -134,7 +109,7 @@ ngC3.controller('c3Controller', function ($scope, caskWindowManager, c3, myHelpe
 ngC3.directive('c3Line', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'line', attr);
+      scope.initC3(elem, 'line', attr, {xtickcount: 5});
     }
   }, baseDirective);
 });
@@ -163,10 +138,18 @@ ngC3.directive('c3Donut', function () {
   }, baseDirective);
 });
 
+ngC3.directive('c3Scatter', function () {
+  return angular.extend({
+    link: function (scope, elem, attr) {
+      scope.initC3(elem, 'scatter', attr, {xtickcount: 5});
+    }
+  }, baseDirective);
+});
+
 ngC3.directive('c3Spline', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'spline', attr);
+      scope.initC3(elem, 'spline', attr, { xtickcount: 5});
     }
   }, baseDirective);
 });
@@ -174,7 +157,7 @@ ngC3.directive('c3Spline', function () {
 ngC3.directive('c3Step', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'step', attr);
+      scope.initC3(elem, 'step', attr, {xtickcount: 5});
     }
   }, baseDirective);
 });
@@ -182,7 +165,7 @@ ngC3.directive('c3Step', function () {
 ngC3.directive('c3Area', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'area', attr);
+      scope.initC3(elem, 'area', attr, {xtickcount: 5});
     }
   }, baseDirective);
 });
@@ -190,7 +173,7 @@ ngC3.directive('c3Area', function () {
 ngC3.directive('c3AreaStep', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'area-step', attr);
+      scope.initC3(elem, 'area-step', attr, {xtickcount: 5});
     }
   }, baseDirective);
 });
@@ -198,7 +181,15 @@ ngC3.directive('c3AreaStep', function () {
 ngC3.directive('c3AreaSpline', function () {
   return angular.extend({
     link: function (scope, elem, attr) {
-      scope.initC3(elem, 'area-spline', attr);
+      scope.initC3(elem, 'area-spline', attr, {xtickcount: 5} );
+    }
+  }, baseDirective);
+});
+
+ngC3.directive('c3AreaSplineStacked', function () {
+  return angular.extend({
+    link: function (scope, elem, attr) {
+      scope.initC3(elem, 'area-spline', attr, {stack: true, xtickcount: 5});
     }
   }, baseDirective);
 });

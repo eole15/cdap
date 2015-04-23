@@ -21,6 +21,8 @@ import co.cask.cdap.api.templates.plugins.PluginClass;
 import co.cask.cdap.api.templates.plugins.PluginInfo;
 import co.cask.cdap.api.templates.plugins.PluginProperties;
 import co.cask.cdap.api.templates.plugins.PluginPropertyField;
+import co.cask.cdap.api.templates.plugins.PluginSelector;
+import co.cask.cdap.api.templates.plugins.PluginVersion;
 import co.cask.cdap.app.program.ManifestFields;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
@@ -31,16 +33,21 @@ import co.cask.cdap.common.lang.jar.BundleJarUtil;
 import co.cask.cdap.common.utils.DirUtils;
 import co.cask.cdap.internal.app.plugins.test.TestPlugin;
 import co.cask.cdap.internal.test.AppJarHelper;
+import co.cask.cdap.proto.ProgramType;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.twill.filesystem.LocalLocationFactory;
 import org.apache.twill.filesystem.Location;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -51,13 +58,16 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -71,22 +81,29 @@ public class PluginTest {
   public static final TemporaryFolder TMP_FOLDER = new TemporaryFolder();
 
   private static final String TEMPLATE_NAME = "PluginTest";
+  private static final Gson GSON = new Gson();
 
   private static CConfiguration cConf;
   private static File appTemplateJar;
+  private static ApplicationTemplateInfo appTemplateInfo;
   private static File templatePluginDir;
   private static ClassLoader templateClassLoader;
 
   @BeforeClass
   public static void setup() throws IOException, ClassNotFoundException {
+    LoggerFactory.getLogger(PluginTest.class).info("Testing {}", cConf);
+
     cConf = CConfiguration.create();
     cConf.set(Constants.CFG_LOCAL_DATA_DIR, TMP_FOLDER.newFolder().getAbsolutePath());
+    cConf.set(Constants.AppFabric.APP_TEMPLATE_DIR, TMP_FOLDER.newFolder().getAbsolutePath());
 
     DirUtils.mkdirs(new File(cConf.get(Constants.AppFabric.APP_TEMPLATE_DIR)));
 
     // Create the template jar
     File appTemplateDir = new File(cConf.get(Constants.AppFabric.APP_TEMPLATE_DIR));
     appTemplateJar = createJar(PluginTestAppTemplate.class, new File(appTemplateDir, "PluginTest-1.0.jar"));
+    appTemplateInfo = new ApplicationTemplateInfo(appTemplateJar, TEMPLATE_NAME, TEMPLATE_NAME,
+                                                  ProgramType.WORKER, Files.hash(appTemplateJar, Hashing.md5()));
 
     templateClassLoader = createAppClassLoader(appTemplateJar);
 
@@ -99,6 +116,15 @@ public class PluginTest {
     generateClass(EmptyClass.class, "test.EmptyClass", libDir);
     createJar(new DirectoryClassLoader(libDir, null).loadClass("test.EmptyClass"),
               new File(new File(templatePluginDir, "lib"), "common.jar"));
+  }
+
+  @After
+  public void cleanupPlugins() throws IOException {
+    // Cleanup the jars in the plugin directory for the template,
+    // as each test creates plugin jar for different kind of testing
+    for (File jarFile : DirUtils.listFiles(templatePluginDir, "jar")) {
+      jarFile.delete();
+    }
   }
 
   @Test
@@ -119,10 +145,7 @@ public class PluginTest {
 
     // Build up the plugin repository.
     PluginRepository repository = new PluginRepository(cConf);
-    repository.inspectPlugins(ImmutableMap.of(TEMPLATE_NAME, appTemplateJar));
-
-    // Retrieve plugin info
-    Multimap<PluginInfo, PluginClass> pluginInfos = repository.getPlugins(TEMPLATE_NAME);
+    Multimap<PluginInfo, PluginClass> pluginInfos = repository.inspectPlugins(TEMPLATE_NAME, appTemplateJar);
     Assert.assertEquals(2, pluginInfos.size());
 
     // Instantiate the plugins and execute them
@@ -145,38 +168,95 @@ public class PluginTest {
     // Create a jar, without any export package information
     createJar(TestPlugin.class, new File(templatePluginDir, "external-plugin-1.0.jar"));
 
-    // Create a config json file.
-    PluginClass pluginClass = new PluginClass("plugin", "External", "External Plugin", TestPlugin.class.getName(), null,
-      ImmutableMap.of(
-        "class.name", new PluginPropertyField("class.name", "Name of the class", "string", true),
-        "timeout", new PluginPropertyField("timeout", "Timeout value", "long", false)
-      ));
+    // Create a config json file that expose two plugins (to the same class).
+    // One of the plugin has no property field
+    List<JsonObject> pluginDefs = ImmutableList.of(
+      createPluginJson("plugin", "External", "External Plugin", TestPlugin.class.getName(),
+                       new PluginPropertyField("class.name", "Name of the class", "string", true),
+                       new PluginPropertyField("timeout", "Timeout value", "long", false)
+      ),
+      createPluginJson("plugin2", "External2", "External Plugin2", TestPlugin.class.getName())
+    );
+
     File configFile = new File(templatePluginDir, "external-plugin-1.0.json");
     Writer writer = Files.newWriter(configFile, Charsets.UTF_8);
     try {
-      new Gson().toJson(ImmutableList.of(pluginClass), writer);
+      GSON.toJson(pluginDefs, writer);
     } finally {
       writer.close();
     }
 
     // Build up the plugin repository.
     PluginRepository repository = new PluginRepository(cConf);
-    repository.inspectPlugins(ImmutableMap.of(TEMPLATE_NAME, appTemplateJar));
+    TreeMultimap<PluginInfo, PluginClass> plugins = repository.inspectPlugins(TEMPLATE_NAME, appTemplateJar);
 
     // There should be one for the external-plugin
-    Multimap<PluginInfo, PluginClass> plugins = repository.getPlugins(TEMPLATE_NAME);
-    Map.Entry<PluginInfo, PluginClass> pluginEntry = null;
+    PluginInfo pluginInfo = null;
     for (Map.Entry<PluginInfo, PluginClass> entry : plugins.entries()) {
       if (entry.getKey().getName().equals("external-plugin")) {
-        pluginEntry = entry;
+        pluginInfo = entry.getKey();
         break;
       }
     }
 
-    Assert.assertNotNull(pluginEntry);
-    // There should be exactly one plugin class for the external plugin.
-    Assert.assertEquals(1, plugins.get(pluginEntry.getKey()).size());
-    Assert.assertEquals(pluginClass, pluginEntry.getValue());
+    Assert.assertNotNull(pluginInfo);
+
+    // There should be two plugin classes
+    Assert.assertEquals(2, plugins.get(pluginInfo).size());
+
+    // The first one have two property fields, the second one has no property field
+    // The collection is always sorted by the plugin name (guaranteed by plugin repository
+    PluginClass pluginClass = plugins.get(pluginInfo).first();
+    Assert.assertEquals("External", pluginClass.getName());
+    Assert.assertEquals(2, pluginClass.getProperties().size());
+
+    pluginClass = plugins.get(pluginInfo).last();
+    Assert.assertEquals("External2", pluginClass.getName());
+    Assert.assertEquals(0, pluginClass.getProperties().size());
+  }
+
+  @Test
+  public void testPluginSelector() throws IOException {
+    PluginRepository repository = new PluginRepository(cConf);
+
+    // No plugin yet
+    Map.Entry<PluginInfo, PluginClass> plugin = repository.findPlugin(TEMPLATE_NAME,
+                                                                      "plugin", "TestPlugin2", new PluginSelector());
+    Assert.assertNull(plugin);
+
+    // Create a plugin jar
+    Manifest manifest = createManifest(ManifestFields.EXPORT_PACKAGE, TestPlugin.class.getPackage().getName());
+    createJar(TestPlugin.class, new File(templatePluginDir, "myPlugin-1.0.jar"), manifest);
+
+    // Build up the plugin repository.
+    repository.inspectPlugins(ImmutableList.of(appTemplateInfo));
+
+    // Should get the only version.
+    plugin = repository.findPlugin(TEMPLATE_NAME, "plugin", "TestPlugin2", new PluginSelector());
+    Assert.assertNotNull(plugin);
+    Assert.assertEquals(new PluginVersion("1.0"), plugin.getKey().getVersion());
+    Assert.assertEquals("TestPlugin2", plugin.getValue().getName());
+
+    // Create another plugin jar with later version and update the repository
+    createJar(TestPlugin.class, new File(templatePluginDir, "myPlugin-2.0.jar"), manifest);
+    repository.inspectPlugins(ImmutableList.of(appTemplateInfo));
+
+    // Should select the latest version
+    plugin = repository.findPlugin(TEMPLATE_NAME, "plugin", "TestPlugin2", new PluginSelector());
+    Assert.assertNotNull(plugin);
+    Assert.assertEquals(new PluginVersion("2.0"), plugin.getKey().getVersion());
+    Assert.assertEquals("TestPlugin2", plugin.getValue().getName());
+
+    // Use a custom plugin selector to select with smallest version
+    plugin = repository.findPlugin(TEMPLATE_NAME, "plugin", "TestPlugin2", new PluginSelector() {
+      @Override
+      public Map.Entry<PluginInfo, PluginClass> select(SortedMap<PluginInfo, PluginClass> plugins) {
+        return plugins.entrySet().iterator().next();
+      }
+    });
+    Assert.assertNotNull(plugin);
+    Assert.assertEquals(new PluginVersion("1.0"), plugin.getKey().getVersion());
+    Assert.assertEquals("TestPlugin2", plugin.getValue().getName());
   }
 
   private static ClassLoader createAppClassLoader(File jarFile) throws IOException {
@@ -230,5 +310,22 @@ public class PluginTest {
     } finally {
       byteCode.close();
     }
+  }
+
+  private JsonObject createPluginJson(String type, String name, String description,
+                                      String className, PluginPropertyField...fields) {
+    JsonObject json = new JsonObject();
+    json.addProperty("type", type);
+    json.addProperty("name", name);
+    json.addProperty("description", description);
+    json.addProperty("className", className);
+    if (fields.length > 0) {
+      Map<String, PluginPropertyField> properties = Maps.newHashMap();
+      for (PluginPropertyField field : fields) {
+        properties.put(field.getName(), field);
+      }
+      json.add("properties", GSON.toJsonTree(properties));
+    }
+    return json;
   }
 }

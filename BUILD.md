@@ -28,7 +28,7 @@ See [Surefire doc](http://maven.apache.org/surefire/maven-surefire-plugin/exampl
     MAVEN_OPTS="-Xmx512m" mvn package -DskipTests -pl cdap-examples -am -amd -P examples
 
 ### Build Standalone distribution ZIP
-    MAVEN_OPTS="-Xmx512m" mvn clean package -DskipTests -P examples -pl cdap-examples -am -amd && MAVEN_OPTS="-Xmx512m" mvn package -pl cdap-standalone -am -DskipTests -P dist,release
+    MAVEN_OPTS="-Xmx512m" mvn clean package -DskipTests -P examples,templates -pl cdap-examples,cdap-app-templates -am -amd && MAVEN_OPTS="-Xmx512m" mvn package -pl cdap-standalone -am -DskipTests -P dist,release
     
 ### Build the limited set of Javadocs used in distribution ZIP
     mvn clean package javadoc:javadoc -pl cdap-api -am -DskipTests -P release
@@ -60,10 +60,14 @@ See [Surefire doc](http://maven.apache.org/surefire/maven-surefire-plugin/exampl
 ### Change version
     mvn versions:set -DnewVersion=[new_version] -DgenerateBackupPoms=false -P examples
     
+### Running from IDE (Intellij and Eclipse)
+    cd cdap-ui
+    bower install && npm install && gulp build (whenever there is change in UI packages)
+    Then, run standalone from IDE.
     
 ## License and Trademarks
 
-Copyright © 2014 Cask Data, Inc.
+Copyright © 2014-2015 Cask Data, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 in compliance with the License. You may obtain a copy of the License at
