@@ -212,7 +212,7 @@ public class MetricsHandler extends AuthenticatedHttpHandler {
       tagsQuerying(request, responder, tags, metrics, groupBy);
     } else {
       // context querying support for 2.8 compatibility.
-      contextQuerying(request, responder, context, metrics.get(0), groupBy.size() > 0 ? groupBy.get(0) : null);
+      contextQuerying(request, responder, context, metrics, groupBy.size() > 0 ? groupBy.get(0) : null);
     }
   }
 
@@ -270,11 +270,11 @@ public class MetricsHandler extends AuthenticatedHttpHandler {
   }
 
   private void contextQuerying(HttpRequest request, HttpResponder responder,
-                               String context, String metric, String groupBy) {
+                               String context, List<String> metrics, String groupBy) {
     try {
       List<String> groupByTags = parseGroupBy(groupBy);
       MetricQueryResult queryResult = executeQuery(request, parseTagValuesAsMap(context),
-                                                   groupByTags, ImmutableList.of(metric));
+                                                   groupByTags, metrics);
       responder.sendJson(HttpResponseStatus.OK, queryResult);
     } catch (IllegalArgumentException e) {
       LOG.warn("Invalid request", e);
