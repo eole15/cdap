@@ -34,8 +34,8 @@ import co.cask.tephra.Transaction;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -332,9 +332,9 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
    * Gets all barrier information for all groups. The information are sorted in the order of
    * the barrier changes.
    */
-  Multimap<Long, QueueBarrier> getAllBarriers() {
+  LinkedHashMultimap<Long, QueueBarrier> getAllBarriers() {
     return scanBarriers(new AllPairCollector<Long, QueueBarrier>()).finishMultimap(
-      HashMultimap.<Long, QueueBarrier>create());
+      LinkedHashMultimap.<Long, QueueBarrier>create());
   }
 
   void getLatestConsumerGroups(Collection<? super ConsumerGroupConfig> result) {
@@ -491,10 +491,10 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
     Map<Long, QueueBarrier> barrierInfo = Maps.newHashMap();
     Map<byte[], byte[]> columns = row.getColumns();
     for (byte[] columnKey : columns.keySet()) {
-      long groupId = Bytes.toLong(columnKey);
-      QueueBarrier barrier = decodeBarrierInfo(row, groupId);
+      byte[] groupInfo = row.get(columnKey);
+      QueueBarrier barrier = decodeBarrierInfo(row.getRow(), groupInfo);
       if (barrier != null) {
-        barrierInfo.put(groupId, barrier);
+        barrierInfo.put(barrier.getGroupConfig().getGroupId(), barrier);
       }
     }
     return barrierInfo;
@@ -502,12 +502,15 @@ final class HBaseConsumerStateStore extends AbstractDataset implements QueueConf
 
   @Nullable
   private QueueBarrier decodeBarrierInfo(Row row, long groupId) {
-    byte[] groupInfo = row.get(Bytes.toBytes(groupId));
+    return decodeBarrierInfo(row.getRow(), row.get(Bytes.toBytes(groupId)));
+  }
+
+  @Nullable
+  private QueueBarrier decodeBarrierInfo(byte[] rowKey, @Nullable byte[] groupInfo) {
     if (groupInfo == null) {
       return null;
     }
     ConsumerGroupConfig groupConfig = GSON.fromJson(new String(groupInfo, Charsets.UTF_8), ConsumerGroupConfig.class);
-    byte[] rowKey = row.getRow();
     byte[] startRow = Arrays.copyOfRange(rowKey, queueName.toBytes().length, rowKey.length);
     return new QueueBarrier(groupConfig, startRow);
   }

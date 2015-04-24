@@ -26,7 +26,6 @@ import co.cask.cdap.data.runtime.DataSetsModules;
 import co.cask.cdap.data2.queue.ConsumerConfig;
 import co.cask.cdap.data2.queue.ConsumerGroupConfig;
 import co.cask.cdap.data2.queue.QueueClientFactory;
-import co.cask.cdap.data2.transaction.queue.AbstractQueueConsumer;
 import co.cask.cdap.data2.transaction.queue.ConsumerEntryState;
 import co.cask.cdap.data2.transaction.queue.QueueAdmin;
 import co.cask.cdap.data2.transaction.queue.QueueConstants;
@@ -111,6 +110,7 @@ public class HBaseQueueDebugger extends AbstractIdleService {
 
     QueueStatistics stats = new QueueStatistics();
     int currentSection = 1;
+
     for (Long groupId : barriers.keySet()) {
       LOG.info("Scanning barriers for group {}", groupId);
       Collection<QueueBarrier> groupBarriers = barriers.get(groupId);
@@ -205,9 +205,8 @@ public class HBaseQueueDebugger extends AbstractIdleService {
     }
 
     ConsumerEntryState state = QueueEntryRow.getState(stateValue);
-    int stateInstanceId = QueueEntryRow.getStateInstanceId(stateValue);
     if (state == ConsumerEntryState.PROCESSED) {
-      long writePointer = AbstractQueueConsumer.getWritePointer(rowKey, queueRowPrefixLength);
+      long writePointer = QueueEntryRow.getWritePointer(rowKey, queueRowPrefixLength);
       if (tx.isVisible(writePointer)) {
         stats.countProcessedAndVisible();
       } else {
